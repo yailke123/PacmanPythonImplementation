@@ -22,9 +22,8 @@ class QLearner:
 		self.actual = []
 		self.memory = []  # Contains information about past decisions.
 
-	def get_state(self, game, player):
-
-		# Array with 12  entries. Entries Corresponds to:
+	def get_state(self, map_manager, pacman):
+		# Returns array with 12  entries. Entries correspond to:
 		# 0:  is_moving_left
 		# 1:  is_moving_right
 		# 2:  is_moving_up
@@ -38,15 +37,15 @@ class QLearner:
 		# 10: is_closest_to_dot_up
 		# 11: is_closest_to_dot_down
 
-		walls = game.check_walls()
-		dot_distances = game.calculate_dot_distances()
+		walls = map_manager.check_walls()
+		dot_distances = map_manager.get_closest_pellet_direction()
 
 		state = [
 			# setting the direction.
-			player.direction[0],
-			player.direction[1],
-			player.direction[2],
-			player.direction[3],
+			pacman.direction[0],
+			pacman.direction[1],
+			pacman.direction[2],
+			pacman.direction[3],
 
 			# setting the walls.
 			walls[0],
@@ -111,7 +110,7 @@ class QLearner:
 	def train_short_memory(self, state, action, reward, next_state, is_dead):
 		target = reward
 		if not is_dead:
-			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, 11)))[0])
-		target_f = self.model.predict(state.reshape((1, 11)))
+			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, 12)))[0])
+		target_f = self.model.predict(state.reshape((1, 12)))
 		target_f[0][np.argmax(action)] = target
-		self.model.fit(state.reshape((1, 11)), target_f, epochs=1, verbose=0)
+		self.model.fit(state.reshape((1, 12)), target_f, epochs=1, verbose=0)
