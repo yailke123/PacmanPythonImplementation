@@ -6,10 +6,11 @@ import pygame
 import level001
 import basicSprite
 from pygame.locals import *
+from Player import *
 from pygame import mixer
 from helpers import *
 from snakeSprite import Snake, Ghost
-from menu import *
+# from menu import *
 from image import *
 
 # TODO
@@ -24,22 +25,22 @@ from image import *
 
 clock = pygame.time.Clock()
 
-if not pygame.font: print 'Warning, fonts disabled'
-if not pygame.mixer: print 'Warning, sound disabled'
+if not pygame.font: print('Warning, fonts disabled')
+if not pygame.mixer: print('Warning, sound disabled')
 
 BLOCK_SIZE = 24
 
 
 def mainmenu(screen):
 	menu = cMenu(50, 50, 20, 5, 'vertical', 100, screen,
-				 [('Start Game', 1, None),
-				  ('Options', 2, None),
-				  ('Exit', 3, None)])
+	             [('Start Game', 1, None),
+	              ('Options', 2, None),
+	              ('Exit', 3, None)])
 
 	menu_options = cMenu(50, 50, 20, 5, 'vertical', 100, screen,
-						 [('Back', 0, None),
-						  ('opt 1', 200, None),
-						  ('opt 2', 200, None)])
+	                     [('Back', 0, None),
+	                      ('opt 1', 200, None),
+	                      ('opt 2', 200, None)])
 
 	# Center the menu on the draw_surface (the entire screen here)
 	menu.set_center(True, True)
@@ -66,10 +67,10 @@ def mainmenu(screen):
 		# Check if the state has changed, if it has, then post a user event to
 		# the queue to force the menu to be shown at least once
 
-		print prev_state, state
+		print(prev_state, state)
 
 		if prev_state != state:
-			print state
+			print(state)
 			bkg = load_image('bkg.jpg', 'data/images')
 			screen.blit(bkg, (0, 0))
 			pygame.display.flip()
@@ -91,9 +92,9 @@ def mainmenu(screen):
 				state = 0
 			elif state == 2:
 				rect_list, state = menu_options.update(e, state)
-				print 'Options!', state
+				print('Options!', state)
 			else:
-				print 'Exit!'
+				print('Exit!')
 				pygame.quit()
 				sys.exit()
 
@@ -124,9 +125,9 @@ class PyManMain:
 
 		# Setup the sounds
 		pygame.mixer.init()
-		self.sounds = {'die': mixer.Sound("die.ogg"), 'intro': mixer.Sound("intro.ogg")}
+		# self.sounds = {'die': mixer.Sound("die.ogg"), 'intro': mixer.Sound("intro.ogg")}
 
-		self.sounds['intro'].play()
+		# self.sounds['intro'].play()
 
 		# Setup the variables
 		self.collisiontol = 5;
@@ -135,7 +136,6 @@ class PyManMain:
 	def MainLoop(self):
 		"""This is the Main Loop of the Game"""
 		while 1:
-			mainmenu(self.screen)
 			"""Load All of our Sprites"""
 			self.LoadSprites();
 
@@ -164,13 +164,14 @@ class PyManMain:
 				self.ghost3_sprites.update(self.block_sprites)
 				self.ghost4_sprites.update(self.block_sprites)
 
-				if pygame.sprite.collide_rect(self.ghost, self.snake) or pygame.sprite.collide_rect(self.ghost2,
-																									self.snake) or pygame.sprite.collide_rect(
-						self.ghost3, self.snake) or pygame.sprite.collide_rect(self.ghost4, self.snake):
+				if not (not pygame.sprite.collide_rect(self.ghost, self.snake) and not pygame.sprite.collide_rect(
+						self.ghost2,
+						self.snake)) or pygame.sprite.collide_rect(
+					self.ghost3, self.snake) or pygame.sprite.collide_rect(self.ghost4, self.snake):
 					self.collisions += 1
-					print "Col+1", self.collisions
+					print("Col+1", self.collisions)
 					if self.collisions == self.collisiontol:
-						print "gameover"
+						print("gameover")
 						break
 				else:
 					self.collisions = 0
@@ -198,7 +199,7 @@ class PyManMain:
 				pygame.display.flip()
 				clock.tick(40)
 			# print clock.get_fps()
-			self.sounds['die'].play()
+			# self.sounds['die'].play()
 
 	def LoadSprites(self):
 		"""Load all of the sprites that we need"""
@@ -214,10 +215,11 @@ class PyManMain:
 		self.block_sprites = pygame.sprite.Group()
 		self.gwall_sprites = pygame.sprite.Group()
 
-		for y in xrange(len(layout)):
-			for x in xrange(len(layout[y])):
+		for y in range(len(layout)):
+			for x in range(len(layout[y])):
 				"""Get the center point for the rects"""
 				centerPoint = [(x * BLOCK_SIZE) + x_offset, (y * BLOCK_SIZE + y_offset)]
+				# print centerPoint
 				if layout[y][x] == level1.BLOCK:
 					self.block_sprites.add(basicSprite.Sprite(centerPoint, img_list[level1.BLOCK]))
 				elif layout[y][x] == level1.GWALL:
@@ -240,6 +242,8 @@ class PyManMain:
 		self.ghost2_sprites = pygame.sprite.RenderPlain((self.ghost2))
 		self.ghost3_sprites = pygame.sprite.RenderPlain((self.ghost3))
 		self.ghost4_sprites = pygame.sprite.RenderPlain((self.ghost4))
+
+		self.player = Player(self.snake)
 
 
 if __name__ == "__main__":
