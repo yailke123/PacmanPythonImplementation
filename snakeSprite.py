@@ -19,18 +19,18 @@ class Pacman(basicSprite.Sprite):
 		"""Initialize the number of pellets eaten"""
 		self.pellets = 0
 		"""Set the number of Pixels to move each time"""
-		self.dist = 3
+		self.speed = 3
 
-		"""Initialize how much we are moving"""
+		# """Initialize how much we are moving"""
 		self.xMove = 0
 		self.yMove = 0
 
 		self.score = 0
 
-		self.direction = 0
-		self.nextdir = 0
-		self.xdir = [0, -self.dist, self.dist, 0, 0]
-		self.ydir = [0, 0, 0, -self.dist, self.dist]
+		self.direction = [0, 0, 0, 0]
+		self.nextdir = [0, 0, 0, 0]
+		# self.xdir = [0, -self.dist, self.dist, 0, 0]
+		# self.ydir = [0, 0, 0, -self.dist, self.dist]
 
 		# Coordinates in tile format.
 		# X increases in East direction.
@@ -54,35 +54,28 @@ class Pacman(basicSprite.Sprite):
 		self.direction = self.nextdir
 
 		if (key == K_RIGHT):
-			self.nextdir = 2
+			self.nextdir = [0, 1, 0, 0]
 		elif (key == K_LEFT):
-			self.nextdir = 1
+			self.nextdir = [1, 0, 0, 0]
 		elif (key == K_UP):
-			self.nextdir = 3
+			self.nextdir = [0, 0, 1, 0]
 		elif (key == K_DOWN):
-			self.nextdir = 4
+			self.nextdir = [0, 0, 0, 1]
 
 	def update(self, block_group):
 		"""Called when the Snake sprit should update itself"""
-		self.xMove = self.xdir[self.nextdir]
-		self.yMove = self.ydir[self.nextdir]
-		tmpX = int((self.rect.left - x_offset)/BLOCK_SIZE)
-		tmpY = int((self.rect.top - y_offset)/BLOCK_SIZE - 1)
-		print(self.xMove)
+		# calculates move depending on next_dir array.
+		self.xMove = ((self.nextdir[0] * -1) + (self.nextdir[1])) * self.speed
+		self.yMove = ((self.nextdir[2] * -1) + (self.nextdir[3])) * self.speed
+
+		tile_x = int((self.rect.left - x_offset)/BLOCK_SIZE)
+		tile_y = int((self.rect.top - y_offset)/BLOCK_SIZE - 1)
+
 		# if location is changed.
-		if tmpX != self.currentX or tmpY != self.currentY:
-			# if layout[tmpY][tmpX] == 0:
-			# 	layout[tmpY][tmpX] = 9
-			self.map_manager.move_pacman(tmpX, tmpY)
-
-			# print (layout[tmpY])
-
-			self.currentX = tmpX
-			self.currentY = tmpY
-			# print("x ", tmpX, " y: ", tmpY)
-			#change occured
-
-		#print centerPoint
+		if tile_x != self.currentX or tile_y != self.currentY:
+			self.map_manager.move_pacman(tile_x, tile_y)
+			self.currentX = tile_x
+			self.currentY = tile_y
 
 		self.rect.move_ip(self.xMove, self.yMove)
 
