@@ -77,33 +77,24 @@ class Pacman(basicSprite.Sprite):
 	def update(self, block_group):
 		"""Called when the Snake sprit should update itself"""
 
-		#Going left
-		if self.direction[0] == 1:
-			if((self.rect.centerx-36) % 24 == 0):
-				self.tile_x = round((self.rect.centerx - 36)/BLOCK_SIZE)
-		#Going right
-		if self.direction[1] == 1 :
-			if ((self.rect.centerx - 36) % 24 == 0):
-				self.tile_x = round((self.rect.centerx - 36) / BLOCK_SIZE )
-		#Going up
-		if self.direction[2] == 1:
-			if ((self.rect.centery - 60) % 24 == 0):
-				self.tile_y = round((self.rect.centery - 60) / BLOCK_SIZE )
-		#Going down
-		if self.direction[3] == 1:
-			if ((self.rect.centery - 60) % 24 == 0):
-				self.tile_y = round((self.rect.centery - 60) / BLOCK_SIZE)
+		# Going left or right
+		if self.direction[0] == 1 or self.direction[1] == 1:
+			# if(self.rect.centerx-36) % 24 == 0:
+			self.tile_x = round((self.rect.centerx - 36)/BLOCK_SIZE)
+
+		# Going up or down
+		if self.direction[2] == 1 or self.direction[3] == 1:
+			# if ((self.rect.centery - 60) % 24 == 0):
+			self.tile_y = round((self.rect.centery - 60) / BLOCK_SIZE )
 
 		# if location is changed.
 		if self.tile_x != self.currentX or self.tile_y != self.currentY:
-			print("selam kizlar tile x im budur", self.tile_x, " hades göttür tile y budur ", self.tile_y)
 
 			#print("new Tile")
 			self.map_manager.move_pacman(self.tile_x, self.tile_y,self)
 			self.currentX = self.tile_x
 			self.currentY = self.tile_y
 
-			print("LEFTIM BU ", (self.rect.centerx - 48)/BLOCK_SIZE +1 , "top top top ", (self.rect.centery - 72) / BLOCK_SIZE +1)
 		walls = self.map_manager.check_walls(self.tile_x, self.tile_y)
 		wall_in_next_dir = np.add(np.asarray(walls), np.asarray(self.nextdir))
 		wall_in_curr_dir = np.add(np.asarray(walls), np.asarray(self.direction))
@@ -111,23 +102,22 @@ class Pacman(basicSprite.Sprite):
 		new_result = np.where(wall_in_next_dir == 2)
 		old_result = np.where(wall_in_curr_dir == 2)
 		# I can move to next_dir
-		if not self.is_next_dir_performed and np.asarray(new_result).size == 0:
+		if not self.is_next_dir_performed and np.asarray(new_result).size == 0 and ((self.rect.centery - 12) % 24 == 0) and ((self.rect.centerx - 12) % 24 == 0):
 			# calculates move depending on next_dir array.
 			self.xMove = ((self.nextdir[0] * -1) + (self.nextdir[1])) * self.speed
 			self.yMove = ((self.nextdir[2] * -1) + (self.nextdir[3])) * self.speed
-			if ((self.rect.centery - 60) % 24 == 0) and ((self.rect.centery - 60) % 24 == 0):
-				self.rect.move_ip(self.xMove, self.yMove)
+			self.rect.move_ip(self.xMove, self.yMove)
 			if not np.array_equal( self.nextdir, self.direction):
 				self.direction = self.nextdir
 			self.is_next_dir_performed = True
 			#print('next_dir')
 
 		# I can continue on my old direction.
-		elif np.asarray(old_result).size == 0:
-			self.rect.move_ip(self.xMove, self.yMove)
+		elif np.asarray(old_result).size == 0 or not ((self.rect.centery - 12) % 24 == 0 and (self.rect.centerx - 12) % 24 == 0):
+				self.rect.move_ip(self.xMove, self.yMove)
 			#print('old_dir')
 		# I cannot move anywhere otherwise.
-		else:
+		elif ((self.rect.centery - 12) % 24 == 0) and ((self.rect.centerx - 12) % 24 == 0):
 			self.xMove = 0
 			self.yMove = 0
 			self.rect.move_ip(self.xMove, self.yMove)

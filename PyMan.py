@@ -1,5 +1,4 @@
 from keras.utils import to_categorical
-
 import level001
 import basicSprite
 from helpers import *
@@ -14,37 +13,23 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-
-
-# TODO
-# > add power pills
-# > add quit option
-# > improve sound substructure
-# > add better object code and polymorphism
-# > add cherries etc / powerups
-# > choose control of ghost / pacman
-# > option submenu
-
-
-clock = pygame.time.Clock()
-
-if not pygame.font:
-	print('Warning, fonts disabled')
-# if not pygame.mixer:
-# 	print('Warning, sound disabled')
-
-BLOCK_SIZE = 24
-IS_AI = True
-
 def plot_seaborn(array_counter, array_score):
-    sns.set(color_codes=True)
-    ax = sns.regplot(np.array([array_counter])[0], np.array([array_score])[0], color="b", x_jitter=.1, line_kws={'color':'green'})
-    ax.set(xlabel='games', ylabel='score')
-    plt.show()
+	sns.set(color_codes=True)
+	ax = sns.regplot(np.array([array_counter])[0], np.array([array_score])[0], color="b", x_jitter=.1,
+	                 line_kws={'color': 'green'})
+	ax.set(xlabel='games', ylabel='score')
+	plt.show()
+
 
 class PyManMain:
 	"""The Main PyMan Class - This class handles the main
-    initialization and creating of the Game."""
+	initialization and creating of the Game."""
+
+	BLOCK_SIZE = 24
+	IS_AI = False
+	FPS = 60
+	NUMBER_OF_GAMES_TO_TRAIN = 120
+	GENERATION_TIMER = 10
 
 	def __init__(self, width=640, height=480):
 		"""Initialize"""
@@ -60,13 +45,8 @@ class PyManMain:
 		"""Create the Screen"""
 		self.screen = pygame.display.set_mode((self.width, self.height))
 		pygame.display.set_caption("AI playing PacMan in style!")
-		self.isGameOver = False
-		print("alo ")
-		# Setup the variables
-		# TODO: understand
-		self.collisiontol = 5
-		self.collisions = 0
 
+		self.isGameOver = False
 		self.initial_layout = level001.level().getLayout()
 		self.learner = QLearner.QLearner()
 		self.map_manager = MapManager.MapManager(self.initial_layout)
@@ -81,224 +61,65 @@ class PyManMain:
 		else:
 			return record
 
+	def hit_by_ghost(self):
+		if pygame.sprite.collide_rect(self.ghost, self.pacman) or \
+				pygame.sprite.collide_rect(self.ghost2, self.pacman) or \
+				pygame.sprite.collide_rect(self.ghost3, self.pacman) or \
+				pygame.sprite.collide_rect(self.ghost4, self.pacman):
+			self.game_counter += 1
+			print("Game over: ", self.game_counter)
+			self.isGameOver = True
+			return True
+		return False
 
+	def update_score(self):
+		collide_list = pygame.sprite.spritecollide(self.pacman, self.pellet_sprites, True)
+		"""Update the amount of pellets eaten"""
+		self.pacman.pellets = self.pacman.pellets + len(collide_list)
+		self.score = self.pacman.pellets * 10
 
+	def draw_objects(self):
+		self.screen.blit(self.background, (0, 0))
+		if pygame.font:
+			font = pygame.font.Font(None, 36)
+			text = font.render("Score %s" % self.score, 1, (255, 255, 255))
+			textpos = text.get_rect(x=0)
+			self.screen.blit(text, textpos)
 
+		self.pellet_sprites.draw(self.screen)
+		self.pacman_sprites.draw(self.screen)
+		self.ghost_sprites.draw(self.screen)
+		self.ghost2_sprites.draw(self.screen)
+		self.ghost3_sprites.draw(self.screen)
+		self.ghost4_sprites.draw(self.screen)
+		pygame.display.flip()
+		clock.tick(self.FPS)
 
-	def main_loop(self):
-		score_plot = []
-		counter_plot = []
-		"""This is the Main Loop of the Game"""
-		while 1:
-			"""Load All of our Sprites"""
-			self.LoadSprites()
+	def update_ghosts(self):
+		self.ghost_sprites.update(self.block_sprites)
+		self.ghost2_sprites.update(self.block_sprites)
+		self.ghost3_sprites.update(self.block_sprites)
+		self.ghost4_sprites.update(self.block_sprites)
 
-			"""Create the background"""
-			self.background = pygame.Surface(self.screen.get_size())
-			self.background = self.background.convert()
-			self.background.fill((0, 0, 0))
-			"""Draw the blocks onto the background, since they only need to be drawn once"""
-			self.block_sprites.draw(self.background)
-			self.gwall_sprites.draw(self.background)
+	def reset_game(self):
+		self.load_sprites()
+		self.draw_static_objects()
+		self.map_manager.reset_map(self.initial_layout)
 
-			while 1:
-				if not IS_AI:
-					for event in pygame.event.get():
-						if event.type == pygame.QUIT:
-							sys.exit()
-						elif event.type == KEYDOWN:  # or event.type == KEYUP
-							if ((event.key == K_RIGHT) or (event.key == K_LEFT) or (event.key == K_UP)
-									or (event.key == K_DOWN)):
-								self.pacman.MoveKeyDown(event.key)
-				# #self.pacman_sprites.update(self.block_sprites)
-				#
-				# # Not rendering ghost for now.
-				# # TODO: Render Ghosts.
-				# # self.ghost_sprites.update(self.block_sprites)
-				# # self.ghost2_sprites.update(self.block_sprites)
-				# # self.ghost3_sprites.update(self.block_sprites)
-				# # self.ghost4_sprites.update(self.block_sprites)
-				#
-				# if not (not pygame.sprite.collide_rect(self.ghost, self.pacman) and not pygame.sprite.collide_rect(
-				# 		self.ghost2,
-				# 		self.pacman)) or pygame.sprite.collide_rect(
-				# 	self.ghost3, self.pacman) or pygame.sprite.collide_rect(self.ghost4, self.pacman):
-				# 	self.collisions += 1
-				# 	print("Col+1", self.collisions)
-				# 	if self.collisions == self.collisiontol:
-				# 		self.game_counter += 1
-				# 		self.isGameOver = True
-				# 		print("gameover", self.game_counter)
-				# 		if IS_AI:
-				# 			self.learner.replay_new(self.learner.memory)
-				# 		break
-				# else:
-				# 	self.collisions = 0
-				#
-				# """Check for a snake collision/pellet collision"""
-				# lstCols = pygame.sprite.spritecollide(self.pacman, self.pellet_sprites, True)
-				# """Update the amount of pellets eaten"""
-				# self.pacman.pellets = self.pacman.pellets + len(lstCols)
-				# self.score = self.pacman.pellets * 10
-				#
-				#
-				# """Do the Drawing"""
-				# self.screen.blit(self.background, (0, 0))
-				# if pygame.font:
-				# 	font = pygame.font.Font(None, 36)
-				# 	text = font.render("Score %s" % self.score, 1, (255, 255, 255))
-				# 	textpos = text.get_rect(x=0)
-				# 	self.screen.blit(text, textpos)
-				#
-				# self.pellet_sprites.draw(self.screen)
-				# self.pacman_sprites.draw(self.screen)
-				# self.ghost_sprites.draw(self.screen)
-				# self.ghost2_sprites.draw(self.screen)
-				# self.ghost3_sprites.draw(self.screen)
-				# self.ghost4_sprites.draw(self.screen)
-				# pygame.display.flip()
-				# clock.tick(40)
-				else:
-					if self.game_counter < 25 and not self.isGameOver:
-						self.end = time.time()
-						self.elapsed_time = self.end-self.start
-						if(self.elapsed_time > 5):
-							print("sure biti")
-							self.start = time.time()
-							counter_plot.append(self.game_counter)
-							score_plot.append(self.score)
-							self.game_counter += 1
-							self.isGameOver = True
-							break
-						print(self.end-self.start)
-						print("baslıyoruz kızlar")
-						self.learner.epsilon = 60 - self.game_counter
-						old_state = self.learner.get_state(self.map_manager, self.pacman)
-						print("basladık")
-						if randint(0, 200) <self.learner.epsilon:
-							final_move = to_categorical(randint(0, 2), num_classes=4)
-						else:
-							# predict action based on the old state
-							prediction = self.learner.model.predict(old_state.reshape((1, 12)))
-							final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
-							print('mydecision: ', final_move)
-						# perform new move and get new state
-						self.pacman.do_move(final_move)
-						state_new = self.learner.get_state(self.map_manager, self.pacman)
+	def draw_static_objects(self):
+		"""Create the background"""
+		self.background = pygame.Surface(self.screen.get_size())
+		self.background = self.background.convert()
+		self.background.fill((0, 0, 0))
+		"""Draw the blocks onto the background, since they only need to be drawn once"""
+		self.block_sprites.draw(self.background)
+		self.gwall_sprites.draw(self.background)
 
-						# set reward for the new state
-						reward = self.learner.set_reward(self.pacman)
-						# train short memory base on the new action and state
-						self.learner.train_short_memory(old_state, final_move, reward, state_new, self.isGameOver)
-
-						# store the new data into a long term memory
-						self.learner.remember(old_state, final_move, reward, state_new, self.isGameOver)
-						self.record = self.get_record(self.score, self.record)
-
-						#EGENIN BOS ISLERI SOVU BASLIYORU
-						if not (not pygame.sprite.collide_rect(self.ghost, self.pacman) and not pygame.sprite.collide_rect(
-								self.ghost2,
-								self.pacman)) or pygame.sprite.collide_rect(
-							self.ghost3, self.pacman) or pygame.sprite.collide_rect(self.ghost4, self.pacman):
-							self.collisions += 1
-							print("Col+1", self.collisions)
-							if self.collisions == self.collisiontol:
-								self.game_counter += 1
-								self.isGameOver = True
-								print("gameover", self.game_counter)
-								if IS_AI:
-									self.learner.replay_new(self.learner.memory)
-								break
-						else:
-							self.collisions = 0
-
-						"""Check for a snake collision/pellet collision"""
-						lstCols = pygame.sprite.spritecollide(self.pacman, self.pellet_sprites, True)
-						"""Update the amount of pellets eaten"""
-						self.pacman.pellets = self.pacman.pellets + len(lstCols)
-						self.score = self.pacman.pellets * 10
-
-						"""Do the Drawing"""
-						self.screen.blit(self.background, (0, 0))
-						if pygame.font:
-							font = pygame.font.Font(None, 36)
-							text = font.render("Score %s" % self.score, 1, (255, 255, 255))
-							textpos = text.get_rect(x=0)
-							self.screen.blit(text, textpos)
-
-						self.pellet_sprites.draw(self.screen)
-						self.pacman_sprites.draw(self.screen)
-						self.ghost_sprites.draw(self.screen)
-						self.ghost2_sprites.draw(self.screen)
-						self.ghost3_sprites.draw(self.screen)
-						self.ghost4_sprites.draw(self.screen)
-						pygame.display.flip()
-						clock.tick(40)
-						#EGENIN BOS ISLERI SOVU BITI
-
-				print("buraya geldıysen serefsızsın")
-				self.pacman_sprites.update(self.block_sprites)
-				self.isGameOver = False
-
-				if (self.game_counter >= 25):
-					plot_seaborn(counter_plot, score_plot)
-				"""Update the sprites"""
-				# #self.pacman_sprites.update(self.block_sprites)
-				#
-				# # Not rendering ghost for now.
-				# # TODO: Render Ghosts.
-				# # self.ghost_sprites.update(self.block_sprites)
-				# # self.ghost2_sprites.update(self.block_sprites)
-				# # self.ghost3_sprites.update(self.block_sprites)
-				# # self.ghost4_sprites.update(self.block_sprites)
-				#
-				# if not (not pygame.sprite.collide_rect(self.ghost, self.pacman) and not pygame.sprite.collide_rect(
-				# 		self.ghost2,
-				# 		self.pacman)) or pygame.sprite.collide_rect(
-				# 	self.ghost3, self.pacman) or pygame.sprite.collide_rect(self.ghost4, self.pacman):
-				# 	self.collisions += 1
-				# 	print("Col+1", self.collisions)
-				# 	if self.collisions == self.collisiontol:
-				# 		self.game_counter += 1
-				# 		self.isGameOver = True
-				# 		print("gameover", self.game_counter)
-				# 		if IS_AI:
-				# 			self.learner.replay_new(self.learner.memory)
-				# 		break
-				# else:
-				# 	self.collisions = 0
-				#
-				# """Check for a snake collision/pellet collision"""
-				# lstCols = pygame.sprite.spritecollide(self.pacman, self.pellet_sprites, True)
-				# """Update the amount of pellets eaten"""
-				# self.pacman.pellets = self.pacman.pellets + len(lstCols)
-				# self.score = self.pacman.pellets * 10
-				#
-				#
-				# """Do the Drawing"""
-				# self.screen.blit(self.background, (0, 0))
-				# if pygame.font:
-				# 	font = pygame.font.Font(None, 36)
-				# 	text = font.render("Score %s" % self.score, 1, (255, 255, 255))
-				# 	textpos = text.get_rect(x=0)
-				# 	self.screen.blit(text, textpos)
-				#
-				# self.pellet_sprites.draw(self.screen)
-				# self.pacman_sprites.draw(self.screen)
-				# self.ghost_sprites.draw(self.screen)
-				# self.ghost2_sprites.draw(self.screen)
-				# self.ghost3_sprites.draw(self.screen)
-				# self.ghost4_sprites.draw(self.screen)
-				# pygame.display.flip()
-				# clock.tick(40)
-			# print clock.get_fps()
-			# self.sounds['die'].play()
-
-	def LoadSprites(self):
+	def load_sprites(self):
 		"""Load all of the sprites that we need"""
 		"""calculate the center point offset"""
-		x_offset = (BLOCK_SIZE / 2)
-		y_offset = (BLOCK_SIZE / 2)
+		x_offset = (self.BLOCK_SIZE / 2)
+		y_offset = (self.BLOCK_SIZE / 2)
 		"""Load the level"""
 		level1 = level001.level()
 		# layout = level1.getLayout()
@@ -311,7 +132,7 @@ class PyManMain:
 		for y in range(len(self.initial_layout)):
 			for x in range(len(self.initial_layout[y])):
 				"""Get the center point for the rects"""
-				centerPoint = [(x * BLOCK_SIZE) + x_offset, (y * BLOCK_SIZE + y_offset)]
+				centerPoint = [(x * self.BLOCK_SIZE) + x_offset, (y * self.BLOCK_SIZE + y_offset)]
 				# print centerPoint
 				if self.initial_layout[y][x] == level1.BLOCK:
 					self.block_sprites.add(basicSprite.Sprite(centerPoint, img_list[level1.BLOCK]))
@@ -337,9 +158,108 @@ class PyManMain:
 		self.ghost3_sprites = pygame.sprite.RenderPlain(self.ghost3)
 		self.ghost4_sprites = pygame.sprite.RenderPlain(self.ghost4)
 
-		# self.player = Player(self.pacman)
+	def main_loop(self):
+		score_plot = []
+		counter_plot = []
+
+		# Infinitely many games generated.
+		while 1:
+			# Sets game to its initial state.
+			self.reset_game()
+			# Give infinite inputs for the game.
+			while 1:
+				# Player is playing
+				if not self.IS_AI:
+					for event in pygame.event.get():
+						if event.type == pygame.QUIT:
+							sys.exit()
+						elif event.type == KEYDOWN:  # or event.type == KEYUP
+							if ((event.key == K_RIGHT) or (event.key == K_LEFT) or (event.key == K_UP)
+									or (event.key == K_DOWN)):
+								self.pacman.MoveKeyDown(event.key)
+					# self.pacman_sprites.update(self.block_sprites)
+
+					# Not rendering ghost for now.
+					# self.update_ghosts()
+
+					# Check if collided.
+					if self.hit_by_ghost():
+						break
+
+					self.update_score()
+
+					# Draws objects on screen.
+					self.draw_objects()
+
+				# AI is playing.
+				else:
+					if self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN and not self.isGameOver:
+						self.end = time.time()
+						self.elapsed_time = self.end - self.start
+						if self.elapsed_time > self.GENERATION_TIMER:
+							self.start = time.time()
+							counter_plot.append(self.game_counter)
+							score_plot.append(self.score)
+							self.game_counter += 1
+							self.isGameOver = True
+							break
+
+						self.learner.epsilon = 80 - self.game_counter
+						old_state = self.learner.get_state(self.map_manager, self.pacman)
+						if randint(0, 100) < self.learner.epsilon:
+
+							# TODO: Check whether (0, 2) is true.
+							final_move = to_categorical(randint(0, 2), num_classes=4)
+						else:
+							# predict action based on the old state
+							prediction = self.learner.model.predict(old_state.reshape((1, 12)))
+							final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
+							print('mydecision: ', final_move)
+
+						# perform new move and get new state
+						self.pacman.do_move(final_move)
+						state_new = self.learner.get_state(self.map_manager, self.pacman)
+
+						# set reward for the new state
+						reward = self.learner.set_reward(self.pacman)
+
+						# train short memory base on the new action and state
+						self.learner.train_short_memory(old_state, final_move, reward, state_new, self.isGameOver)
+
+						# store the new data into a long term memory
+						self.learner.remember(old_state, final_move, reward, state_new, self.isGameOver)
+						self.record = self.get_record(self.score, self.record)
+
+						if self.hit_by_ghost():
+							self.learner.replay_new(self.learner.memory)
+							break
+
+						"""Check for a snake collision/pellet collision"""
+						self.update_score()
+
+						"""Do the Drawing"""
+						self.draw_objects()
+
+				self.pacman_sprites.update(self.block_sprites)
+				self.isGameOver = False
+
+				if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
+					plot_seaborn(counter_plot, score_plot)
+				"""Update the sprites"""
+			# #self.pacman_sprites.update(self.block_sprites)
+			#
+			# # Not rendering ghost for now.
+			# # TODO: Render Ghosts.
+			# # self.ghost_sprites.update(self.block_sprites)
+			# # self.ghost2_sprites.update(self.block_sprites)
+			# # self.ghost3_sprites.update(self.block_sprites)
+			# # self.ghost4_sprites.update(self.block_sprites)
 
 
 if __name__ == "__main__":
+	clock = pygame.time.Clock()
+
+	if not pygame.font:
+		print('Warning, fonts disabled')
 	MainWindow = PyManMain(500, 575)
 	MainWindow.main_loop()

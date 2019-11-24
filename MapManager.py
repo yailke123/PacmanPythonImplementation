@@ -9,6 +9,13 @@ class MapManager:
 		# replaces initial pacman with blank value.
 		self.layout[self.START_Y][self.START_X] = 9
 
+	def reset_map(self, level_layout):
+		# Removes blank edges from the initial layout.
+		self.layout = [row[1:-1] for row in level_layout[2:]]
+
+		# replaces initial pacman with blank value.
+		self.layout[self.START_Y][self.START_X] = 9
+
 	def move_pacman(self, new_x, new_y, pacman):
 		if self.layout[new_y][new_x] == 0:
 			self.layout[new_y][new_x] = 9

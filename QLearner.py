@@ -74,13 +74,13 @@ class QLearner:
 
 	def create_network(self, weights=None):
 		model = Sequential()
-		model.add(Dense(output_dim=120, activation='relu', input_dim=12))
+		model.add(Dense(activation="relu", input_dim=12, units=120))
 		model.add(Dropout(0.15))
-		model.add(Dense(output_dim=120, activation='relu'))
+		model.add(Dense(activation="relu", units=120))
 		model.add(Dropout(0.15))
-		model.add(Dense(output_dim=120, activation='relu'))
+		model.add(Dense(activation="relu", units=120))
 		model.add(Dropout(0.15))
-		model.add(Dense(output_dim=4, activation='softmax'))
+		model.add(Dense(activation='softmax', units=4))
 		opt = Adam(self.learning_rate)
 		model.compile(loss='mse', optimizer=opt)
 
