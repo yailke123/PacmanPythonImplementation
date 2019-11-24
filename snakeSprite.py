@@ -2,6 +2,8 @@ import basicSprite
 from helpers import *
 import level001
 import MapManager
+import numpy as np
+import math
 
 BLOCK_SIZE = 24
 x_offset = (BLOCK_SIZE / 2)
@@ -18,6 +20,8 @@ class Pacman(basicSprite.Sprite):
 		basicSprite.Sprite.__init__(self, centerPoint, image)
 		"""Initialize the number of pellets eaten"""
 		self.pellets = 0
+		self.did_eat = False
+		self.is_dead = False
 		"""Set the number of Pixels to move each time"""
 		self.speed = 3
 
@@ -37,10 +41,12 @@ class Pacman(basicSprite.Sprite):
 		# Y increses in South direction.
 		self.currentX = 9
 		self.currentY = 15
-
+		self.tile_x = 9
+		self.tile_y = 15
 		# layout[self.currentY][self.currentX] = 9
 
 		self.map_manager = map_manager
+		self.is_next_dir_performed = True
 
 	def get_direction(self):
 		return self.direction
@@ -51,7 +57,7 @@ class Pacman(basicSprite.Sprite):
         xMove and yMove values will be returned to normal when this 
         keys MoveKeyUp function is called."""
 
-		self.direction = self.nextdir
+		#self.direction = self.nextdir
 
 		if (key == K_RIGHT):
 			self.nextdir = [0, 1, 0, 0]
@@ -62,39 +68,93 @@ class Pacman(basicSprite.Sprite):
 		elif (key == K_DOWN):
 			self.nextdir = [0, 0, 0, 1]
 
+		self.is_next_dir_performed = False
+
+	def do_move(self, direction):
+		self.nextdir = direction
+		self.is_next_dir_performed = False
+
 	def update(self, block_group):
 		"""Called when the Snake sprit should update itself"""
-		# calculates move depending on next_dir array.
-		self.xMove = ((self.nextdir[0] * -1) + (self.nextdir[1])) * self.speed
-		self.yMove = ((self.nextdir[2] * -1) + (self.nextdir[3])) * self.speed
 
-		tile_x = int((self.rect.left - x_offset)/BLOCK_SIZE)
-		tile_y = int((self.rect.top - y_offset)/BLOCK_SIZE - 1)
+		#Going left
+		if self.direction[0] == 1:
+			if((self.rect.centerx-36) % 24 == 0):
+				self.tile_x = round((self.rect.centerx - 36)/BLOCK_SIZE)
+		#Going right
+		if self.direction[1] == 1 :
+			if ((self.rect.centerx - 36) % 24 == 0):
+				self.tile_x = round((self.rect.centerx - 36) / BLOCK_SIZE )
+		#Going up
+		if self.direction[2] == 1:
+			if ((self.rect.centery - 60) % 24 == 0):
+				self.tile_y = round((self.rect.centery - 60) / BLOCK_SIZE )
+		#Going down
+		if self.direction[3] == 1:
+			if ((self.rect.centery - 60) % 24 == 0):
+				self.tile_y = round((self.rect.centery - 60) / BLOCK_SIZE)
 
 		# if location is changed.
-		if tile_x != self.currentX or tile_y != self.currentY:
-			self.map_manager.move_pacman(tile_x, tile_y)
-			self.currentX = tile_x
-			self.currentY = tile_y
+		if self.tile_x != self.currentX or self.tile_y != self.currentY:
+			print("selam kizlar tile x im budur", self.tile_x, " hades göttür tile y budur ", self.tile_y)
 
-		self.rect.move_ip(self.xMove, self.yMove)
+			#print("new Tile")
+			self.map_manager.move_pacman(self.tile_x, self.tile_y,self)
+			self.currentX = self.tile_x
+			self.currentY = self.tile_y
 
-		"""IF we hit a block, don't move - reverse the movement"""
-		if pygame.sprite.spritecollide(self, block_group, False):
-			self.rect.move_ip(-self.xMove, -self.yMove)
-			"""IF we can't move in the new direction... continue in old direction"""
-			self.xMove = self.xdir[self.direction]
-			self.yMove = self.ydir[self.direction]
+			print("LEFTIM BU ", (self.rect.centerx - 48)/BLOCK_SIZE +1 , "top top top ", (self.rect.centery - 72) / BLOCK_SIZE +1)
+		walls = self.map_manager.check_walls(self.tile_x, self.tile_y)
+		wall_in_next_dir = np.add(np.asarray(walls), np.asarray(self.nextdir))
+		wall_in_curr_dir = np.add(np.asarray(walls), np.asarray(self.direction))
+
+		new_result = np.where(wall_in_next_dir == 2)
+		old_result = np.where(wall_in_curr_dir == 2)
+		# I can move to next_dir
+		if not self.is_next_dir_performed and np.asarray(new_result).size == 0:
+			# calculates move depending on next_dir array.
+			self.xMove = ((self.nextdir[0] * -1) + (self.nextdir[1])) * self.speed
+			self.yMove = ((self.nextdir[2] * -1) + (self.nextdir[3])) * self.speed
+			if ((self.rect.centery - 60) % 24 == 0) and ((self.rect.centery - 60) % 24 == 0):
+				self.rect.move_ip(self.xMove, self.yMove)
+			if not np.array_equal( self.nextdir, self.direction):
+				self.direction = self.nextdir
+			self.is_next_dir_performed = True
+			#print('next_dir')
+
+		# I can continue on my old direction.
+		elif np.asarray(old_result).size == 0:
 			self.rect.move_ip(self.xMove, self.yMove)
-
-			if pygame.sprite.spritecollide(self, block_group, False):
-				self.rect.move_ip(-self.xMove, -self.yMove)
-				self.yMove = 0
-				self.xMove = 0
-				self.direction = 0
-				self.nextdir = 0
+			#print('old_dir')
+		# I cannot move anywhere otherwise.
 		else:
-			self.direction = 0
+			self.xMove = 0
+			self.yMove = 0
+			self.rect.move_ip(self.xMove, self.yMove)
+			#print('stop')
+
+
+
+
+
+		# self.rect.move_ip(self.xMove, self.yMove)
+		#
+		# """IF we hit a block, don't move - reverse the movement"""
+		# if pygame.sprite.spritecollide(self, block_group, False):
+		# 	self.rect.move_ip(-self.xMove, -self.yMove)
+		# 	"""IF we can't move in the new direction... continue in old direction"""
+		# 	self.xMove = self.xdir[self.direction]
+		# 	self.yMove = self.ydir[self.direction]
+		# 	self.rect.move_ip(self.xMove, self.yMove)
+		#
+		# 	if pygame.sprite.spritecollide(self, block_group, False):
+		# 		self.rect.move_ip(-self.xMove, -self.yMove)
+		# 		self.yMove = 0
+		# 		self.xMove = 0
+		# 		self.direction = 0
+		# 		self.nextdir = 0
+		# else:
+		# 	self.direction = 0
 
 
 class Ghost(basicSprite.Sprite):

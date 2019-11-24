@@ -37,7 +37,7 @@ class QLearner:
 		# 10: is_closest_to_dot_up
 		# 11: is_closest_to_dot_down
 
-		walls = map_manager.check_walls()
+		walls = map_manager.check_walls(pacman.currentX,pacman.currentY)
 		dot_distances = map_manager.get_closest_pellet_direction()
 
 		state = [
