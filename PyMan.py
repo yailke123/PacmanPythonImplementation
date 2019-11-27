@@ -26,7 +26,7 @@ class PyManMain:
 	initialization and creating of the Game."""
 
 	BLOCK_SIZE = 24
-	IS_AI = False
+	IS_AI = True
 	FPS = 60
 	NUMBER_OF_GAMES_TO_TRAIN = 120
 	GENERATION_TIMER = 10

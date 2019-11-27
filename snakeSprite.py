@@ -75,7 +75,7 @@ class Pacman(basicSprite.Sprite):
 		self.is_next_dir_performed = False
 
 	def update(self, block_group):
-		"""Called when the Snake sprit should update itself"""
+		"""Called when the Snake sprite should update itself"""
 
 		# Going left or right
 		if self.direction[0] == 1 or self.direction[1] == 1:
