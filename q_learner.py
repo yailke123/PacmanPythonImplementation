@@ -32,8 +32,8 @@ class QLearner:
 		# 5:  can_move_right
 		# 6:  can_move_up
 		# 7:  can_move_down
-		# 8:  is_closest_to_dot_right
-		# 9:  is_closest_to_dot_left
+		# 8:  is_closest_to_dot_left
+		# 9:  is_closest_to_dot_right
 		# 10: is_closest_to_dot_up
 		# 11: is_closest_to_dot_down
 

@@ -28,10 +28,10 @@ class PyManMain:
 
 	BLOCK_SIZE = 24
 	IS_AI = True
-	FPS = 30
+	FPS = 120
 	NUMBER_OF_GAMES_TO_TRAIN = 120
 	GENERATION_TIMER = 10
-	INITIAL_EPSILON = 80
+	INITIAL_EPSILON = 40
 
 	def __init__(self, width=640, height=480):
 		"""Initialize"""
@@ -195,6 +195,7 @@ class PyManMain:
 				# AI is playing.
 				else:
 					if self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN and not self.isGameOver:
+						# print('Counter: ', self.game_counter)
 						self.end = time.time()
 						self.elapsed_time = self.end - self.start
 						if self.elapsed_time > self.GENERATION_TIMER:
@@ -207,13 +208,15 @@ class PyManMain:
 
 						self.learner.epsilon = self.INITIAL_EPSILON - self.game_counter
 						old_state = self.learner.get_state(self.map_manager, self.pacman)
-						if randint(0, 100) < self.learner.epsilon:
+						# print('Current State: ', old_state)
+						if randint(0, 200) < self.learner.epsilon:
 							final_move = to_categorical(randint(0, 3), num_classes=4)
+							print('Random move: ', final_move)
 						else:
 							# predict action based on the old state
 							prediction = self.learner.model.predict(old_state.reshape((1, 12)))
 							final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
-							print('mydecision: ', final_move)
+							print('Neural move: ', final_move)
 
 						# perform new move and get new state
 						self.pacman.do_move(final_move)
