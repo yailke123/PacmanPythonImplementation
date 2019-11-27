@@ -11,6 +11,7 @@ import numpy as np
 import time
 import seaborn as sns
 import matplotlib.pyplot as plt
+import sys
 
 
 def plot_seaborn(array_counter, array_score):
@@ -26,10 +27,11 @@ class PyManMain:
 	initialization and creating of the Game."""
 
 	BLOCK_SIZE = 24
-	IS_AI = False
-	FPS = 60
+	IS_AI = True
+	FPS = 30
 	NUMBER_OF_GAMES_TO_TRAIN = 120
 	GENERATION_TIMER = 10
+	INITIAL_EPSILON = 80
 
 	def __init__(self, width=640, height=480):
 		"""Initialize"""
@@ -151,7 +153,6 @@ class PyManMain:
 				elif self.initial_layout[y][x] == level1.GHOST4:
 					self.ghost4 = Ghost(centerPoint, img_list[level1.GHOST4])
 
-		"""Create the Snake group"""
 		self.pacman_sprites = pygame.sprite.RenderPlain(self.pacman)
 		self.ghost_sprites = pygame.sprite.RenderPlain(self.ghost)
 		self.ghost2_sprites = pygame.sprite.RenderPlain(self.ghost2)
@@ -204,12 +205,10 @@ class PyManMain:
 							self.isGameOver = True
 							break
 
-						self.learner.epsilon = 80 - self.game_counter
+						self.learner.epsilon = self.INITIAL_EPSILON - self.game_counter
 						old_state = self.learner.get_state(self.map_manager, self.pacman)
 						if randint(0, 100) < self.learner.epsilon:
-
-							# TODO: Check whether (0, 2) is true.
-							final_move = to_categorical(randint(0, 2), num_classes=4)
+							final_move = to_categorical(randint(0, 3), num_classes=4)
 						else:
 							# predict action based on the old state
 							prediction = self.learner.model.predict(old_state.reshape((1, 12)))
@@ -234,7 +233,7 @@ class PyManMain:
 							self.learner.replay_new(self.learner.memory)
 							break
 
-						"""Check for a snake collision/pellet collision"""
+						"""Check for a pacman collision/pellet collision"""
 						self.update_score()
 
 						"""Do the Drawing"""
