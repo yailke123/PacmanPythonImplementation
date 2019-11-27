@@ -1,11 +1,11 @@
 from keras.utils import to_categorical
 import level001
-import basicSprite
+import basic_sprite
 from helpers import *
-from snakeSprite import Pacman, Ghost
+from pacman_sprite import Pacman, Ghost
 from image import *
-import QLearner
-import MapManager
+import q_learner
+import map_manager
 from random import randint
 import numpy as np
 import time
@@ -26,7 +26,7 @@ class PyManMain:
 	initialization and creating of the Game."""
 
 	BLOCK_SIZE = 24
-	IS_AI = True
+	IS_AI = False
 	FPS = 60
 	NUMBER_OF_GAMES_TO_TRAIN = 120
 	GENERATION_TIMER = 10
@@ -48,8 +48,8 @@ class PyManMain:
 
 		self.isGameOver = False
 		self.initial_layout = level001.level().getLayout()
-		self.learner = QLearner.QLearner()
-		self.map_manager = MapManager.MapManager(self.initial_layout)
+		self.learner = q_learner.QLearner()
+		self.map_manager = map_manager.MapManager(self.initial_layout)
 		self.pacman = None
 		self.game_counter = 0
 		self.score = 0
@@ -135,13 +135,13 @@ class PyManMain:
 				centerPoint = [(x * self.BLOCK_SIZE) + x_offset, (y * self.BLOCK_SIZE + y_offset)]
 				# print centerPoint
 				if self.initial_layout[y][x] == level1.BLOCK:
-					self.block_sprites.add(basicSprite.Sprite(centerPoint, img_list[level1.BLOCK]))
+					self.block_sprites.add(basic_sprite.Sprite(centerPoint, img_list[level1.BLOCK]))
 				elif self.initial_layout[y][x] == level1.GWALL:
-					self.gwall_sprites.add(basicSprite.Sprite(centerPoint, img_list[level1.GWALL]))
+					self.gwall_sprites.add(basic_sprite.Sprite(centerPoint, img_list[level1.GWALL]))
 				elif self.initial_layout[y][x] == level1.SNAKE:
 					self.pacman = Pacman(centerPoint, img_list[level1.SNAKE], self.map_manager)
 				elif self.initial_layout[y][x] == level1.PELLET:
-					self.pellet_sprites.add(basicSprite.Sprite(centerPoint, img_list[level1.PELLET]))
+					self.pellet_sprites.add(basic_sprite.Sprite(centerPoint, img_list[level1.PELLET]))
 				elif self.initial_layout[y][x] == level1.GHOST:
 					self.ghost = Ghost(centerPoint, img_list[level1.GHOST])
 				elif self.initial_layout[y][x] == level1.GHOST2:

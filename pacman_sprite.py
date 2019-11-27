@@ -1,9 +1,8 @@
-import basicSprite
+import basic_sprite
 from helpers import *
 import level001
-import MapManager
+import map_manager
 import numpy as np
-import math
 
 BLOCK_SIZE = 24
 x_offset = (BLOCK_SIZE / 2)
@@ -13,11 +12,11 @@ layout = level1.getLayout()[2:]
 layout = [row[1:-1] for row in layout]
 
 
-class Pacman(basicSprite.Sprite):
+class Pacman(basic_sprite.Sprite):
 	"""This is our snake that will move around the screen"""
 
-	def __init__(self, centerPoint, image, map_manager: MapManager):
-		basicSprite.Sprite.__init__(self, centerPoint, image)
+	def __init__(self, centerPoint, image, map_manager: map_manager):
+		basic_sprite.Sprite.__init__(self, centerPoint, image)
 		"""Initialize the number of pellets eaten"""
 		self.pellets = 0
 		self.did_eat = False
@@ -147,12 +146,12 @@ class Pacman(basicSprite.Sprite):
 		# 	self.direction = 0
 
 
-class Ghost(basicSprite.Sprite):
+class Ghost(basic_sprite.Sprite):
 	"""This is our ghost that will move around the screen"""
 
 	def __init__(self, centerPoint, image):
 
-		basicSprite.Sprite.__init__(self, centerPoint, image)
+		basic_sprite.Sprite.__init__(self, centerPoint, image)
 		"""Initialize the number of pellets eaten"""
 		self.pellets = 0
 		"""Set the number of Pixels to move each time"""
