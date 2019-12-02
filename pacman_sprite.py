@@ -15,14 +15,14 @@ layout = [row[1:-1] for row in layout]
 class Pacman(basic_sprite.Sprite):
 	"""This is our snake that will move around the screen"""
 
-	def __init__(self, centerPoint, image, map_manager: map_manager):
+	def __init__(self, centerPoint, image, map_manager: map_manager, speed):
 		basic_sprite.Sprite.__init__(self, centerPoint, image)
 		"""Initialize the number of pellets eaten"""
 		self.pellets = 0
 		self.did_eat = False
 		self.is_dead = False
 		"""Set the number of Pixels to move each time"""
-		self.speed = 3
+		self.speed = speed
 
 		# """Initialize how much we are moving"""
 		self.xMove = 0
@@ -46,11 +46,13 @@ class Pacman(basic_sprite.Sprite):
 
 		self.map_manager = map_manager
 		self.is_next_dir_performed = True
+		self.did_change_tile = True
 
 	def get_direction(self):
 		return self.direction
 
-	def MoveKeyDown(self, key):
+
+	def move_key_down(self, key):
 		"""This function sets the xMove or yMove variables that will
         then move the snake when update() function is called.  The
         xMove and yMove values will be returned to normal when this 
@@ -73,6 +75,7 @@ class Pacman(basic_sprite.Sprite):
 		self.nextdir = direction
 		self.is_next_dir_performed = False
 
+
 	def update(self, block_group):
 		"""Called when the Snake sprite should update itself"""
 
@@ -93,6 +96,9 @@ class Pacman(basic_sprite.Sprite):
 			self.map_manager.move_pacman(self.tile_x, self.tile_y,self)
 			self.currentX = self.tile_x
 			self.currentY = self.tile_y
+			self.did_change_tile = True
+		else:
+			self.did_change_tile = False
 
 		walls = self.map_manager.check_walls(self.tile_x, self.tile_y)
 		wall_in_next_dir = np.add(np.asarray(walls), np.asarray(self.nextdir))

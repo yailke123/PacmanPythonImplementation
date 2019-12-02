@@ -4,10 +4,11 @@ from keras.layers.core import Dense, Dropout
 import random
 import numpy as np
 import pandas as pd
-
+import pprint
 
 class QLearner:
 	ITEMS_TO_REPLAY = 1000
+	FRAME_PENALIZE_COEFFICIENT = 0.3
 
 	def __init__(self):
 		self.reward = 0
@@ -62,15 +63,24 @@ class QLearner:
 
 		return np.asarray(state)
 
-	def set_reward(self, player):
+	def set_reward(self, player, frame_count):
 		self.reward = 0
+		time_penalty = int(frame_count * self.FRAME_PENALIZE_COEFFICIENT)
 		if player.is_dead:
 			self.reward = -10
 			return self.reward
-
 		if player.did_eat:
 			self.reward = 10
+		self.reward -= time_penalty
+		# print('Reward', self.reward)
 		return self.reward
+
+	def print_weight(self):
+		#print(self.model.get_weights()[0])
+		pp = pprint.PrettyPrinter(indent=4)
+		for lay in self.model.layers:
+			pp.pprint(lay.name)
+			pp.pprint(lay.get_weights())
 
 	def create_network(self, weights=None):
 		model = Sequential()

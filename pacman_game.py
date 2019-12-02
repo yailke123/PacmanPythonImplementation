@@ -29,9 +29,11 @@ class PyManMain:
 	BLOCK_SIZE = 24
 	IS_AI = True
 	FPS = 120
-	NUMBER_OF_GAMES_TO_TRAIN = 120
-	GENERATION_TIMER = 10
-	INITIAL_EPSILON = 40
+	NUMBER_OF_GAMES_TO_TRAIN = 60
+	GENERATION_TIMER = 5
+	INITIAL_EPSILON = 50
+	PACMAN_SPEED = 3
+	DECISION_TIMEOUT_CONSTANT = 2
 
 	def __init__(self, width=640, height=480):
 		"""Initialize"""
@@ -53,9 +55,11 @@ class PyManMain:
 		self.learner = q_learner.QLearner()
 		self.map_manager = map_manager.MapManager(self.initial_layout)
 		self.pacman = None
-		self.game_counter = 0
+		self.game_counter = 1
 		self.score = 0
 		self.record = 0
+		self.frame_count_since_last_decision = 0
+		self.frame_count_threshold = self.BLOCK_SIZE / self.PACMAN_SPEED * self.DECISION_TIMEOUT_CONSTANT
 
 	def get_record(self, score, record):
 		if score >= record:
@@ -107,6 +111,12 @@ class PyManMain:
 		self.load_sprites()
 		self.draw_static_objects()
 		self.map_manager.reset_map(self.initial_layout)
+		self.learner.epsilon = self.INITIAL_EPSILON - self.game_counter
+		print('Game Count: ', self.game_counter)
+		self.pacman.did_change_tile = True
+		self.isGameOver = False
+		self.frame_count_since_last_decision = 0
+		# self.learner.print_weight()
 
 	def draw_static_objects(self):
 		"""Create the background"""
@@ -141,7 +151,7 @@ class PyManMain:
 				elif self.initial_layout[y][x] == level1.GWALL:
 					self.gwall_sprites.add(basic_sprite.Sprite(centerPoint, img_list[level1.GWALL]))
 				elif self.initial_layout[y][x] == level1.SNAKE:
-					self.pacman = Pacman(centerPoint, img_list[level1.SNAKE], self.map_manager)
+					self.pacman = Pacman(centerPoint, img_list[level1.SNAKE], self.map_manager, self.PACMAN_SPEED)
 				elif self.initial_layout[y][x] == level1.PELLET:
 					self.pellet_sprites.add(basic_sprite.Sprite(centerPoint, img_list[level1.PELLET]))
 				elif self.initial_layout[y][x] == level1.GHOST:
@@ -177,7 +187,7 @@ class PyManMain:
 						elif event.type == KEYDOWN:  # or event.type == KEYUP
 							if ((event.key == K_RIGHT) or (event.key == K_LEFT) or (event.key == K_UP)
 									or (event.key == K_DOWN)):
-								self.pacman.MoveKeyDown(event.key)
+								self.pacman.move_key_down(event.key)
 					# self.pacman_sprites.update(self.block_sprites)
 
 					# Not rendering ghost for now.
@@ -198,6 +208,7 @@ class PyManMain:
 						# print('Counter: ', self.game_counter)
 						self.end = time.time()
 						self.elapsed_time = self.end - self.start
+						# Check if game timed-out.
 						if self.elapsed_time > self.GENERATION_TIMER:
 							self.start = time.time()
 							counter_plot.append(self.game_counter)
@@ -206,31 +217,37 @@ class PyManMain:
 							self.isGameOver = True
 							break
 
-						self.learner.epsilon = self.INITIAL_EPSILON - self.game_counter
-						old_state = self.learner.get_state(self.map_manager, self.pacman)
-						# print('Current State: ', old_state)
-						if randint(0, 200) < self.learner.epsilon:
-							final_move = to_categorical(randint(0, 3), num_classes=4)
-							print('Random move: ', final_move)
-						else:
-							# predict action based on the old state
-							prediction = self.learner.model.predict(old_state.reshape((1, 12)))
-							final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
-							print('Neural move: ', final_move)
+						self.frame_count_since_last_decision += 1
+						if self.pacman.did_change_tile or self.frame_count_since_last_decision > self.frame_count_threshold:
+							if self.frame_count_since_last_decision > self.frame_count_threshold:
+								self.pacman.did_eat = False
+								# print('decision due timeout:')
+							old_state = self.learner.get_state(self.map_manager, self.pacman)
+							# print('Current State: ', old_state)
+							if randint(0, 60) < self.learner.epsilon:
+								final_move = to_categorical(randint(0, 3), num_classes=4)
+								# print('Random move: ', final_move)
+							else:
+								# predict action based on the old state
+								prediction = self.learner.model.predict(old_state.reshape((1, 12)))
+								final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
+								# print('Neural move: ', final_move)
 
-						# perform new move and get new state
-						self.pacman.do_move(final_move)
-						state_new = self.learner.get_state(self.map_manager, self.pacman)
+							# perform new move and get new state
+							self.pacman.do_move(final_move)
+							state_new = self.learner.get_state(self.map_manager, self.pacman)
 
-						# set reward for the new state
-						reward = self.learner.set_reward(self.pacman)
+							# set reward for the new state
+							reward = self.learner.set_reward(self.pacman, self.frame_count_since_last_decision)
 
-						# train short memory base on the new action and state
-						self.learner.train_short_memory(old_state, final_move, reward, state_new, self.isGameOver)
+							# train short memory base on the new action and state
+							self.learner.train_short_memory(old_state, final_move, reward, state_new, self.isGameOver)
 
-						# store the new data into a long term memory
-						self.learner.remember(old_state, final_move, reward, state_new, self.isGameOver)
-						self.record = self.get_record(self.score, self.record)
+							# store the new data into a long term memory
+							self.learner.remember(old_state, final_move, reward, state_new, self.isGameOver)
+							self.record = self.get_record(self.score, self.record)
+
+							self.frame_count_since_last_decision = 0
 
 						if self.hit_by_ghost():
 							self.learner.replay_new(self.learner.memory)
@@ -243,7 +260,7 @@ class PyManMain:
 						self.draw_objects()
 
 				self.pacman_sprites.update(self.block_sprites)
-				self.isGameOver = False
+
 
 				if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
 					plot_seaborn(counter_plot, score_plot)
