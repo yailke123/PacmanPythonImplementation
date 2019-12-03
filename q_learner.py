@@ -12,16 +12,16 @@ class QLearner:
 
 	def __init__(self):
 		self.reward = 0
-		self.alpha = 0.9
+		self.alpha = 0.1
 		self.dataframe = pd.DataFrame()
 		self.short_memory = np.array([])
 		self.agent_target = 1
 		self.agent_predict = 0
 		self.learning_rate = 0.0005
 		self.model = self.create_network()
-		self.epsilon = 0
 		self.actual = []
 		self.memory = []  # Contains information about past decisions.
+		self.epsilon = 0
 
 	def get_state(self, map_manager, pacman):
 		# Returns array with 12  entries. Entries correspond to:
@@ -42,12 +42,6 @@ class QLearner:
 		dot_distances = map_manager.get_closest_pellet_direction(pacman.currentX, pacman.currentY)
 
 		state = [
-			# setting the direction.
-			pacman.direction[0],
-			pacman.direction[1],
-			pacman.direction[2],
-			pacman.direction[3],
-
 			# setting the walls.
 			walls[0],
 			walls[1],
@@ -84,7 +78,7 @@ class QLearner:
 
 	def create_network(self, weights=None):
 		model = Sequential()
-		model.add(Dense(activation="relu", input_dim=12, units=120))
+		model.add(Dense(activation="relu", input_dim=8, units=120))
 		model.add(Dropout(0.15))
 		model.add(Dense(activation="relu", units=120))
 		model.add(Dropout(0.15))
@@ -120,7 +114,7 @@ class QLearner:
 	def train_short_memory(self, state, action, reward, next_state, is_dead):
 		target = reward
 		if not is_dead:
-			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, 12)))[0])
-		target_f = self.model.predict(state.reshape((1, 12)))
+			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, 8)))[0])
+		target_f = self.model.predict(state.reshape((1, 8)))
 		target_f[0][np.argmax(action)] = target
-		self.model.fit(state.reshape((1, 12)), target_f, epochs=1, verbose=0)
+		self.model.fit(state.reshape((1, 8)), target_f, epochs=1, verbose=0)

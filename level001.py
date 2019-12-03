@@ -4,6 +4,8 @@ from helpers import load_image
 class Level:
     """The Base Class for Levels"""
 
+    IS_EGE = False
+
     def getLayout(self):
         """Get the Layout of the level"""
         """Returns a [][] list"""
@@ -58,11 +60,17 @@ class level(Level):
 
     def getSprites(self):
         block, rect = load_image('block.png')
-        pellet, rect = load_image('pellet.png',-1)
-        snake, rect = load_image('pacman.png',-1)
+        pellet, rect = load_image('pellet.png', -1)
         gwall, rect = load_image('gwall.png')
         ghost, rect = load_image('ghost.png',-1)
         ghost2, rect = load_image('ghost2.png',-1)
         ghost3, rect = load_image('ghost3.png',-1)
         ghost4, rect = load_image('ghost4.png',-1)
-        return [pellet, block, snake, gwall, ghost, ghost2, ghost3, ghost4]
+
+        if self.IS_EGE:
+            snake, rect = load_image('ege_1.png', -1)
+            pac_2, rect = load_image('ege_2.png',-1)
+            return [pellet, block, snake, gwall, ghost, ghost2, ghost3, ghost4, pac_2]
+        else:
+            snake, rect = load_image('pacman.png', -1)
+            return [pellet, block, snake, gwall, ghost, ghost2, ghost3, ghost4]

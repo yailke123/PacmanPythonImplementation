@@ -25,13 +25,13 @@ def plot_seaborn(array_counter, array_score):
 class PyManMain:
 	"""The Main PyMan Class - This class handles the main
 	initialization and creating of the Game."""
-
 	BLOCK_SIZE = 24
+
 	IS_AI = True
-	FPS = 120
-	NUMBER_OF_GAMES_TO_TRAIN = 60
-	GENERATION_TIMER = 5
-	INITIAL_EPSILON = 50
+	FPS = 240
+	NUMBER_OF_GAMES_TO_TRAIN = 200
+	GENERATION_TIMER = 8
+	INITIAL_EPSILON = 160
 	PACMAN_SPEED = 3
 	DECISION_TIMEOUT_CONSTANT = 2
 
@@ -224,14 +224,14 @@ class PyManMain:
 								# print('decision due timeout:')
 							old_state = self.learner.get_state(self.map_manager, self.pacman)
 							# print('Current State: ', old_state)
-							if randint(0, 60) < self.learner.epsilon:
+							if randint(0, 200) < self.learner.epsilon:
 								final_move = to_categorical(randint(0, 3), num_classes=4)
-								# print('Random move: ', final_move)
+								print('Random move: ', final_move)
 							else:
 								# predict action based on the old state
-								prediction = self.learner.model.predict(old_state.reshape((1, 12)))
+								prediction = self.learner.model.predict(old_state.reshape((1, 8)))
 								final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
-								# print('Neural move: ', final_move)
+								print('Neural move: ', final_move)
 
 							# perform new move and get new state
 							self.pacman.do_move(final_move)
@@ -262,8 +262,8 @@ class PyManMain:
 				self.pacman_sprites.update(self.block_sprites)
 
 
-				if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
-					plot_seaborn(counter_plot, score_plot)
+			if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
+				plot_seaborn(counter_plot, score_plot)
 				"""Update the sprites"""
 			# #self.pacman_sprites.update(self.block_sprites)
 			#

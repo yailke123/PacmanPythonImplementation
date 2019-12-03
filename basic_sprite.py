@@ -21,7 +21,7 @@ class Pellet(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self) 
         
         if image == None:
-            self.image, self.rect = load_image('pellet.png',-1)
+            self.image, self.rect = load_image('pellet.png', -1)
         else:
             self.image = image
             self.rect = image.get_rect()
