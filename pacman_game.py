@@ -27,7 +27,7 @@ class PyManMain:
 	initialization and creating of the Game."""
 	BLOCK_SIZE = 24
 
-	IS_AI = True
+	IS_AI = False
 	FPS = 240
 	NUMBER_OF_GAMES_TO_TRAIN = 50
 	GENERATION_TIMER = 15
@@ -98,7 +98,7 @@ class PyManMain:
 			self.screen.blit(text, textpos)
 
 			text = font.render("Game Count: %s" % self.game_counter, 1, (255, 255, 255))
-			textpos = text.get_rect(x=130)
+			textpos = text.get_rect(x=125)
 			self.screen.blit(text, textpos)
 
 			text = font.render("Random Prob: %s%%" % round((self.learner.epsilon / self.RAND_UPPER_BOUND)*100), 1, (255, 255, 255))
@@ -201,24 +201,23 @@ class PyManMain:
 							if ((event.key == K_RIGHT) or (event.key == K_LEFT) or (event.key == K_UP)
 									or (event.key == K_DOWN)):
 								self.pacman.move_key_down(event.key)
-					# self.pacman_sprites.update(self.block_sprites)
+					#self.pacman_sprites.update(self.block_sprites) # TODO bu ne ise yarıyor acaba :)
 
-					# Not rendering ghost for now.
-					# self.update_ghosts()
+					# not Not rendering ghost for now.
+					#self.update_ghosts()
 
 					# Check if collided.
 					if self.hit_by_ghost():
 						break
 
-					self.update_score()
+					#self.update_score()
 
 					# Draws objects on screen.
-					self.draw_objects()
+					#self.draw_objects()
 
 				# AI is playing.
 				else:
 					if self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN and not self.isGameOver:
-						# print('Counter: ', self.game_counter)
 						self.end = time.time()
 						self.elapsed_time = self.end - self.start
 						# Check if game timed-out.
@@ -234,9 +233,7 @@ class PyManMain:
 						if self.pacman.did_change_tile or self.frame_count_since_last_decision > self.frame_count_threshold:
 							if self.frame_count_since_last_decision > self.frame_count_threshold:
 								self.pacman.did_eat = False
-								# print('decision due timeout:')
 							old_state = self.learner.get_state(self.map_manager, self.pacman)
-							# print('Current State: ', old_state)
 							if randint(0, self.RAND_UPPER_BOUND) < self.learner.epsilon:
 								final_move = to_categorical(randint(0, 3), num_classes=4)
 								print('Random move: ', final_move)
@@ -267,26 +264,25 @@ class PyManMain:
 							break
 
 						"""Check for a pacman collision/pellet collision"""
-						self.update_score()
+						#self.update_score()
 
 						"""Do the Drawing"""
-						self.draw_objects()
+						#self.draw_objects()
 
 				self.pacman_sprites.update(self.block_sprites)
-
+				self.update_ghosts()
+				self.update_score()
+				self.draw_objects()
 
 			if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
 				plot_seaborn(counter_plot, score_plot)
 				self.learner.save_weights_h5()
 				"""Update the sprites"""
-			# #self.pacman_sprites.update(self.block_sprites)
-			#
-			# # Not rendering ghost for now.
-			# # TODO: Render Ghosts.
-			# # self.ghost_sprites.update(self.block_sprites)
-			# # self.ghost2_sprites.update(self.block_sprites)
-			# # self.ghost3_sprites.update(self.block_sprites)
-			# # self.ghost4_sprites.update(self.block_sprites)
+			self.pacman_sprites.update(self.block_sprites)
+			self.ghost_sprites.update(self.block_sprites)
+			self.ghost2_sprites.update(self.block_sprites)
+			self.ghost3_sprites.update(self.block_sprites)
+			self.ghost4_sprites.update(self.block_sprites)
 
 
 if __name__ == "__main__":
