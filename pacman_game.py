@@ -12,7 +12,6 @@ import time
 import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
-import math
 
 def plot_seaborn(array_counter, array_score):
 	sns.set(color_codes=True)
@@ -27,7 +26,7 @@ class PyManMain:
 	initialization and creating of the Game."""
 	BLOCK_SIZE = 24
 
-	IS_AI = False
+	IS_AI = True
 	FPS = 240
 	NUMBER_OF_GAMES_TO_TRAIN = 50
 	GENERATION_TIMER = 15
@@ -93,15 +92,15 @@ class PyManMain:
 		self.screen.blit(self.background, (0, 0))
 		if pygame.font:
 			font = pygame.font.SysFont("sitkasmallsitkatextbolditalicsitkasubheadingbolditalicsitkaheadingbolditalicsitkadisplaybolditalicsitkabannerbolditalic", 19)
-			text = font.render("Score: %s" % self.score, 1, (255, 255, 255))
+			text = font.render("Score: %s" % self.score, 1, (235, 49, 201))
 			textpos = text.get_rect(x=0)
 			self.screen.blit(text, textpos)
 
-			text = font.render("Game Count: %s" % self.game_counter, 1, (255, 255, 255))
+			text = font.render("Game Count: %s" % self.game_counter, 1, (66, 245, 114))
 			textpos = text.get_rect(x=125)
 			self.screen.blit(text, textpos)
 
-			text = font.render("Random Prob: %s%%" % round((self.learner.epsilon / self.RAND_UPPER_BOUND)*100), 1, (255, 255, 255))
+			text = font.render("Random Prob: %s%%" % round((self.learner.epsilon / self.RAND_UPPER_BOUND)*100), 1, (66, 135, 245))
 			textpos = text.get_rect(x=290)
 			self.screen.blit(text, textpos)
 
