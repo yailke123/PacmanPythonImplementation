@@ -12,7 +12,7 @@ import time
 import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
-
+import math
 
 def plot_seaborn(array_counter, array_score):
 	sns.set(color_codes=True)
@@ -32,14 +32,15 @@ class PyManMain:
 	NUMBER_OF_GAMES_TO_TRAIN = 50
 	GENERATION_TIMER = 15
 	INITIAL_EPSILON = 40
+	RAND_UPPER_BOUND = 80
 	PACMAN_SPEED = 3
 	DECISION_TIMEOUT_CONSTANT = 2
 
 
 	def __init__(self, width=640, height=480):
 		if os.path.isfile('weights.hdf5'):
-			self.INITIAL_EPSILON = 0
-
+			#self.INITIAL_EPSILON = 0
+			pass
 		"""Initialize"""
 		pygame.init()
 		self.start = time.time()
@@ -91,9 +92,17 @@ class PyManMain:
 	def draw_objects(self):
 		self.screen.blit(self.background, (0, 0))
 		if pygame.font:
-			font = pygame.font.Font(None, 36)
-			text = font.render("Score %s" % self.score, 1, (255, 255, 255))
+			font = pygame.font.SysFont("sitkasmallsitkatextbolditalicsitkasubheadingbolditalicsitkaheadingbolditalicsitkadisplaybolditalicsitkabannerbolditalic", 19)
+			text = font.render("Score: %s" % self.score, 1, (255, 255, 255))
 			textpos = text.get_rect(x=0)
+			self.screen.blit(text, textpos)
+
+			text = font.render("Game Count: %s" % self.game_counter, 1, (255, 255, 255))
+			textpos = text.get_rect(x=130)
+			self.screen.blit(text, textpos)
+
+			text = font.render("Random Prob: %s%%" % round((self.learner.epsilon / self.RAND_UPPER_BOUND)*100), 1, (255, 255, 255))
+			textpos = text.get_rect(x=290)
 			self.screen.blit(text, textpos)
 
 		self.pellet_sprites.draw(self.screen)
@@ -228,7 +237,7 @@ class PyManMain:
 								# print('decision due timeout:')
 							old_state = self.learner.get_state(self.map_manager, self.pacman)
 							# print('Current State: ', old_state)
-							if randint(0, 80) < self.learner.epsilon:
+							if randint(0, self.RAND_UPPER_BOUND) < self.learner.epsilon:
 								final_move = to_categorical(randint(0, 3), num_classes=4)
 								print('Random move: ', final_move)
 							else:
