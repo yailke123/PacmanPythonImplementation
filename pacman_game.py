@@ -29,13 +29,17 @@ class PyManMain:
 
 	IS_AI = True
 	FPS = 240
-	NUMBER_OF_GAMES_TO_TRAIN = 200
-	GENERATION_TIMER = 8
-	INITIAL_EPSILON = 160
+	NUMBER_OF_GAMES_TO_TRAIN = 50
+	GENERATION_TIMER = 15
+	INITIAL_EPSILON = 40
 	PACMAN_SPEED = 3
 	DECISION_TIMEOUT_CONSTANT = 2
 
+
 	def __init__(self, width=640, height=480):
+		if os.path.isfile('weights.hdf5'):
+			self.INITIAL_EPSILON = 0
+
 		"""Initialize"""
 		pygame.init()
 		self.start = time.time()
@@ -224,7 +228,7 @@ class PyManMain:
 								# print('decision due timeout:')
 							old_state = self.learner.get_state(self.map_manager, self.pacman)
 							# print('Current State: ', old_state)
-							if randint(0, 200) < self.learner.epsilon:
+							if randint(0, 80) < self.learner.epsilon:
 								final_move = to_categorical(randint(0, 3), num_classes=4)
 								print('Random move: ', final_move)
 							else:
@@ -264,6 +268,7 @@ class PyManMain:
 
 			if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
 				plot_seaborn(counter_plot, score_plot)
+				self.learner.save_weights_h5()
 				"""Update the sprites"""
 			# #self.pacman_sprites.update(self.block_sprites)
 			#

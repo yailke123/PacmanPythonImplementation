@@ -31,6 +31,7 @@ class MapManager:
 	# pacman_row is the row in the layout.
 	# pacman_col is the column in the layout.
 	def calc_distance_to_closest_pellets(self, row, col):
+		non_binary_inputs = False
 		left_layout = deepcopy(self.layout)
 		right_layout = deepcopy(self.layout)
 		up_layout = deepcopy(self.layout)
@@ -41,31 +42,35 @@ class MapManager:
 		right_layout[row][col] = -1
 		up_layout[row][col] = -1
 		down_layout[row][col] = -1
-		print(self.layout)
 		# Calculate distances
 		left_distance = self.check_pellet_on_side(row, col-1, left_layout)
 		right_distance = self.check_pellet_on_side(row, col+1, right_layout)
 		up_distance = self.check_pellet_on_side(row-1, col, up_layout)
 		down_distance = self.check_pellet_on_side(row+1, col, down_layout)
 
+		if non_binary_inputs:
+			return [left_distance, right_distance, up_distance, down_distance]
+
+
 		# Compare distances
 		distances = [(left_distance, 0), (right_distance, 1), (up_distance, 2), (down_distance, 3)]
 		distances.sort(key=lambda tup: tup[0], reverse=True)  # Sort in descending order
+		return [i[1] for i in distances]
 
 		# Shuffle directions with same distance values to prevent bias
-		start = 0
-		end = 1
-		for i in range(len(distances)):
-			if i < len(distances)-1 and distances[i][0] == distances[i+1][0]:  # if two elements have same distance value
-				end += 1
-			elif start != end - 1:
-				temp = distances[start:end]
-				shuffle(temp)
-				distances[start:end] = temp
-				start = end
-				end = start + 1
-
-		return [i[1] for i in distances]
+		# start = 0
+		# end = 1
+		# for i in range(len(distances)):
+		# 	if i < len(distances)-1 and distances[i][0] == distances[i+1][0]:  # if two elements have same distance value
+		# 		end += 1
+		# 	elif start != end - 1:
+		# 		temp = distances[start:end]
+		# 		shuffle(temp)
+		# 		distances[start:end] = temp
+		# 		start = end
+		# 		end = start + 1
+		#
+		# return [i[1] for i in distances]
 
 	@staticmethod
 	def check_pellet_on_side(row, col, layout):
@@ -92,7 +97,7 @@ class MapManager:
 				q.append(((row+1, col), current_distance+1))  # down
 
 		# If couldn't find pellet, there is no path
-		return -1
+		return 1000
 
 	def check_walls(self, pacman_x, pacman_y):
 		result = [0, 0, 0, 0]

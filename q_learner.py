@@ -4,7 +4,8 @@ from keras.layers.core import Dense, Dropout
 import random
 import numpy as np
 import pandas as pd
-import pprint
+import os.path
+import h5py
 
 
 class QLearner:
@@ -19,7 +20,12 @@ class QLearner:
 		self.agent_target = 1
 		self.agent_predict = 0
 		self.learning_rate = 0.0005
-		self.model = self.create_network()
+
+		if os.path.isfile('weights.hdf5'):
+			self.model = self.create_network("weights.hdf5")
+		else:
+			self.model = self.create_network()
+
 		self.actual = []
 		self.memory = []  # Contains information about past decisions.
 		self.epsilon = 0
@@ -50,11 +56,11 @@ class QLearner:
 			walls[2],
 			walls[3],
 
-			# setting the dot distances.
-			dot_distances[0],
-			dot_distances[1],
-			dot_distances[2],
-			dot_distances[3]
+			# left uzaklıkta kacıncı sırada vs
+			closest_directions.index(0),
+			closest_directions.index(1),
+			closest_directions.index(2),
+			closest_directions.index(3)
 		]
 
 		return np.asarray(state)
@@ -71,12 +77,6 @@ class QLearner:
 		# print('Reward', self.reward)
 		return self.reward
 
-	def print_weight(self):
-		#print(self.model.get_weights()[0])
-		pp = pprint.PrettyPrinter(indent=4)
-		for lay in self.model.layers:
-			pp.pprint(lay.name)
-			pp.pprint(lay.get_weights())
 
 	def create_network(self, weights=None):
 		model = Sequential()
@@ -120,3 +120,6 @@ class QLearner:
 		target_f = self.model.predict(state.reshape((1, 8)))
 		target_f[0][np.argmax(action)] = target
 		self.model.fit(state.reshape((1, 8)), target_f, epochs=1, verbose=0)
+
+	def save_weights_h5(self):
+		self.model.save("weights.hdf5")
