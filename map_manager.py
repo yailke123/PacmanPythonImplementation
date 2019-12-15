@@ -1,3 +1,6 @@
+from random import shuffle
+from copy import deepcopy
+
 class MapManager:
 	START_X = 9
 	START_Y = 15
@@ -25,9 +28,71 @@ class MapManager:
 
 		# print(self.layout[new_y])
 
-	def calc_distance_to_closest_pellet(self, pacman_x, pacman_y):
-		pass
+	# pacman_row is the row in the layout.
+	# pacman_col is the column in the layout.
+	def calc_distance_to_closest_pellets(self, row, col):
+		left_layout = deepcopy(self.layout)
+		right_layout = deepcopy(self.layout)
+		up_layout = deepcopy(self.layout)
+		down_layout = deepcopy(self.layout)
 
+		# Set pacman starting position as visited
+		left_layout[row][col] = -1
+		right_layout[row][col] = -1
+		up_layout[row][col] = -1
+		down_layout[row][col] = -1
+		print(self.layout)
+		# Calculate distances
+		left_distance = self.check_pellet_on_side(row, col-1, left_layout)
+		right_distance = self.check_pellet_on_side(row, col+1, right_layout)
+		up_distance = self.check_pellet_on_side(row-1, col, up_layout)
+		down_distance = self.check_pellet_on_side(row+1, col, down_layout)
+
+		# Compare distances
+		distances = [(left_distance, 0), (right_distance, 1), (up_distance, 2), (down_distance, 3)]
+		distances.sort(key=lambda tup: tup[0], reverse=True)  # Sort in descending order
+
+		# Shuffle directions with same distance values to prevent bias
+		start = 0
+		end = 1
+		for i in range(len(distances)):
+			if i < len(distances)-1 and distances[i][0] == distances[i+1][0]:  # if two elements have same distance value
+				end += 1
+			elif start != end - 1:
+				temp = distances[start:end]
+				shuffle(temp)
+				distances[start:end] = temp
+				start = end
+				end = start + 1
+
+		return [i[1] for i in distances]
+
+	@staticmethod
+	def check_pellet_on_side(row, col, layout):
+		q = []
+		q.append(((row, col), 1))  # Add starting point to the queue
+
+		while len(q) != 0: # While queue not empty
+			my_tuple = q.pop(0)
+			row = my_tuple[0][0]
+			col = my_tuple[0][1]
+			current_distance = my_tuple[1]
+
+			#TODO yolda canavar varsa napıcagımızı netlestır
+			if layout[row][col] == 0:  # If pellet in coordinate, return distance
+				return current_distance
+			elif layout[row][col] != -1 and layout[row][col] != 1:  # If not visited(-1) and not wall(1) in coordinate, append neighbours to the queue
+				# Set visited
+				layout[row][col] = -1
+
+				#  Add neighbors to the queue
+				q.append(((row, col-1), current_distance+1))  # left
+				q.append(((row, col+1), current_distance+1))  # right
+				q.append(((row-1, col), current_distance+1))  # up
+				q.append(((row+1, col), current_distance+1))  # down
+
+		# If couldn't find pellet, there is no path
+		return -1
 
 	def check_walls(self, pacman_x, pacman_y):
 		result = [0, 0, 0, 0]

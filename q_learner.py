@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pprint
 
+
 class QLearner:
 	ITEMS_TO_REPLAY = 1000
 	FRAME_PENALIZE_COEFFICIENT = 0.3
@@ -38,8 +39,9 @@ class QLearner:
 		# 10: is_closest_to_dot_up
 		# 11: is_closest_to_dot_down
 
-		walls = map_manager.check_walls(pacman.currentX,pacman.currentY)
+		walls = map_manager.check_walls(pacman.currentX, pacman.currentY)
 		dot_distances = map_manager.get_closest_pellet_direction(pacman.currentX, pacman.currentY)
+		closest_directions = map_manager.calc_distance_to_closest_pellets(pacman.currentY, pacman.currentX) # TODO x y doru mu emin ol
 
 		state = [
 			# setting the walls.
