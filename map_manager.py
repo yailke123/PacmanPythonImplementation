@@ -54,7 +54,7 @@ class MapManager:
 
 		# Compare distances
 		distances = [(left_distance, 0), (right_distance, 1), (up_distance, 2), (down_distance, 3)]
-		distances.sort(key=lambda tup: tup[0], reverse=True)  # Sort in descending order
+		distances.sort(key=lambda tup: tup[0], reverse=False)  # Sort in ascending order
 		return [i[1] for i in distances]
 
 		# Shuffle directions with same distance values to prevent bias
@@ -101,6 +101,7 @@ class MapManager:
 
 	def check_walls(self, pacman_x, pacman_y):
 		result = [0, 0, 0, 0]
+
 		if self.layout[pacman_y - 1][pacman_x] == 1:	# up
 			result[2] = 1
 		if self.layout[pacman_y + 1][pacman_x] == 1:  # down

@@ -11,6 +11,7 @@ import h5py
 class QLearner:
 	ITEMS_TO_REPLAY = 1000
 	FRAME_PENALIZE_COEFFICIENT = 0.3
+	NN_INPUT_SIZE = 12
 
 	def __init__(self):
 		self.reward = 0
@@ -45,9 +46,31 @@ class QLearner:
 		# 10: is_closest_to_dot_up
 		# 11: is_closest_to_dot_down
 
-		walls = map_manager.check_walls(pacman.currentX, pacman.currentY)
-		dot_distances = map_manager.get_closest_pellet_direction(pacman.currentX, pacman.currentY)
-		closest_directions = map_manager.calc_distance_to_closest_pellets(pacman.currentY, pacman.currentX) # TODO x y doru mu emin ol
+		# if is_future_move:
+		# 	x = pacman.currentX - pacman.nextdir[0] + pacman.nextdir[1]
+		# 	y = pacman.currentY - pacman.nextdir[2] + pacman.nextdir[3]
+		# 	x = int(x)
+		# 	y = int(y)
+		#
+		# 	if map_manager.layout[y][x] == 1:
+		# 		x = pacman.currentX
+		# 		y = pacman.currentY
+		# else:
+		# 	x = pacman.currentX
+		# 	y = pacman.currentY
+		#
+		# x = int(x)
+		# y = int(y)
+
+		x = pacman.currentX
+		y = pacman.currentY
+		x = int(x)
+		y = int(y)
+
+		walls = map_manager.check_walls(x, y)
+		# dot_distances = map_manager.get_closest_pellet_direction(x, y)
+		closest_directions = map_manager.calc_distance_to_closest_pellets(y, x)  # TODO x y doru mu emin ol
+		ghost = [0,0,0,0]
 
 		state = [
 			# setting the walls.
@@ -60,9 +83,13 @@ class QLearner:
 			closest_directions.index(0),
 			closest_directions.index(1),
 			closest_directions.index(2),
-			closest_directions.index(3)
-		]
+			closest_directions.index(3),
 
+			ghost[0],
+			ghost[1],
+			ghost[2],
+			ghost[3]
+		]
 		return np.asarray(state)
 
 	def set_reward(self, player, frame_count):
@@ -70,6 +97,8 @@ class QLearner:
 		time_penalty = int(frame_count * self.FRAME_PENALIZE_COEFFICIENT)
 		if player.is_dead:
 			self.reward = -10
+			# print('Reward', self.reward)
+
 			return self.reward
 		if player.did_eat:
 			self.reward = 10
@@ -80,7 +109,7 @@ class QLearner:
 
 	def create_network(self, weights=None):
 		model = Sequential()
-		model.add(Dense(activation="relu", input_dim=8, units=120))
+		model.add(Dense(activation="relu", input_dim=self.NN_INPUT_SIZE, units=120))
 		model.add(Dropout(0.15))
 		model.add(Dense(activation="relu", units=120))
 		model.add(Dropout(0.15))
@@ -116,10 +145,10 @@ class QLearner:
 	def train_short_memory(self, state, action, reward, next_state, is_dead):
 		target = reward
 		if not is_dead:
-			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, 8)))[0])
-		target_f = self.model.predict(state.reshape((1, 8)))
+			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, self.NN_INPUT_SIZE)))[0])
+		target_f = self.model.predict(state.reshape((1, self.NN_INPUT_SIZE)))
 		target_f[0][np.argmax(action)] = target
-		self.model.fit(state.reshape((1, 8)), target_f, epochs=1, verbose=0)
+		self.model.fit(state.reshape((1, self.NN_INPUT_SIZE)), target_f, epochs=1, verbose=0)
 
 	def save_weights_h5(self):
 		self.model.save("weights.hdf5")
