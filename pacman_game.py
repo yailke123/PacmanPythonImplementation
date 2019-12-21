@@ -28,7 +28,7 @@ class PyManMain:
 
 	IS_AI = True
 	FPS = 240
-	NUMBER_OF_GAMES_TO_TRAIN = 20
+	NUMBER_OF_GAMES_TO_TRAIN = 10
 	GENERATION_TIMER = 15
 	INITIAL_EPSILON = 20
 	RAND_UPPER_BOUND = 80
@@ -59,7 +59,7 @@ class PyManMain:
 		self.learner = q_learner.QLearner()
 		self.map_manager = map_manager.MapManager(self.initial_layout)
 		self.pacman = None
-		self.game_counter = 1
+		self.game_counter = 0
 		self.score = 0
 		self.record = 0
 		self.frame_count_since_last_decision = 0
@@ -73,15 +73,11 @@ class PyManMain:
 			return record
 
 	def hit_by_ghost(self):
-		if pygame.sprite.collide_rect(self.ghost, self.pacman) or \
+		return pygame.sprite.collide_rect(self.ghost, self.pacman) or \
 				pygame.sprite.collide_rect(self.ghost2, self.pacman) or \
 				pygame.sprite.collide_rect(self.ghost3, self.pacman) or \
-				pygame.sprite.collide_rect(self.ghost4, self.pacman):
-			self.game_counter += 1
-			print("Game over: ", self.game_counter)
-			self.isGameOver = True
-			return True
-		return False
+				pygame.sprite.collide_rect(self.ghost4, self.pacman)
+
 
 	def update_score(self):
 		collide_list = pygame.sprite.spritecollide(self.pacman, self.pellet_sprites, True)
@@ -131,7 +127,8 @@ class PyManMain:
 		self.frame_count_since_last_decision = 0
 		self.is_initial_move = True
 		self.score = 0
-		# self.learner.print_weight()
+		self.game_counter += 1
+	# self.learner.print_weight()
 
 	def draw_static_objects(self):
 		"""Create the background"""
@@ -215,12 +212,12 @@ class PyManMain:
 					if self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN and not self.isGameOver:
 						self.end = time.time()
 						self.elapsed_time = self.end - self.start
-						# Check if game timed-out or completed.
+						# Check if game timed-out or completed
 						if self.elapsed_time > self.GENERATION_TIMER or self.score == 1820:
 							self.start = time.time()
 							counter_plot.append(self.game_counter)
 							score_plot.append(self.score)
-							self.game_counter += 1
+							# self.game_counter += 1
 							self.isGameOver = True
 							break
 
@@ -267,9 +264,14 @@ class PyManMain:
 
 							self.frame_count_since_last_decision = 0
 
-						# if self.hit_by_ghost():
-						# 	self.learner.replay_new(self.learner.memory)
-						# 	break
+						if self.hit_by_ghost():
+							self.learner.replay_new(self.learner.memory)
+							self.start = time.time()
+							counter_plot.append(self.game_counter)
+							score_plot.append(self.score)
+							# self.game_counter += 1
+							self.isGameOver = True
+							break
 
 				self.pacman_sprites.update(self.block_sprites)
 				self.update_ghosts()
@@ -277,7 +279,7 @@ class PyManMain:
 				self.draw_objects()
 				pygame.event.pump()
 
-			if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
+			if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN-1:
 				plot_seaborn(counter_plot, score_plot)
 				self.learner.save_weights_h5()
 

@@ -174,30 +174,30 @@ class Ghost(basic_sprite.Sprite):
 		self.xdir = [0, -self.dist, self.dist, 0, 0]
 		self.ydir = [0, 0, 0, -self.dist, self.dist]
 
-	# def update(self, block_group):
-	# 	"""Called when the Ghost sprit should update itself"""
-	#
-	# 	self.xMove = self.xdir[self.nextdir]
-	# 	self.yMove = self.ydir[self.nextdir]
-	#
-	# 	self.rect.move_ip(self.xMove, self.yMove)
-	#
-	# 	if pygame.sprite.spritecollide(self, block_group, False):
-	# 		self.rect.move_ip(-self.xMove, -self.yMove)
-	#
-	# 		self.xMove = self.xdir[self.direction]
-	# 		self.yMove = self.ydir[self.direction]
-	# 		self.rect.move_ip(self.xMove, self.yMove)
-	#
-	# 		if pygame.sprite.spritecollide(self, block_group, False):
-	# 			self.rect.move_ip(-self.xMove, -self.yMove)
-	# 			if self.nextdir < 3:
-	# 				self.nextdir = randint(3, 4)
-	# 			else:
-	# 				self.nextdir = randint(1, 2)
-	# 	else:
-	# 		self.direction = self.nextdir
-	# 		if self.nextdir < 3:
-	# 			self.nextdir = randint(3, 4)
-	# 		else:
-	# 			self.nextdir = randint(1, 2)
+	def update(self, block_group):
+		"""Called when the Ghost sprit should update itself"""
+
+		self.xMove = self.xdir[self.nextdir]
+		self.yMove = self.ydir[self.nextdir]
+
+		self.rect.move_ip(self.xMove, self.yMove)
+
+		if pygame.sprite.spritecollide(self, block_group, False):
+			self.rect.move_ip(-self.xMove, -self.yMove)
+
+			self.xMove = self.xdir[self.direction]
+			self.yMove = self.ydir[self.direction]
+			self.rect.move_ip(self.xMove, self.yMove)
+
+			if pygame.sprite.spritecollide(self, block_group, False):
+				self.rect.move_ip(-self.xMove, -self.yMove)
+				if self.nextdir < 3:
+					self.nextdir = randint(3, 4)
+				else:
+					self.nextdir = randint(1, 2)
+		else:
+			self.direction = self.nextdir
+			if self.nextdir < 3:
+				self.nextdir = randint(3, 4)
+			else:
+				self.nextdir = randint(1, 2)

@@ -70,7 +70,8 @@ class QLearner:
 		walls = map_manager.check_walls(x, y)
 		# dot_distances = map_manager.get_closest_pellet_direction(x, y)
 		closest_directions = map_manager.calc_distance_to_closest_pellets(y, x)  # TODO x y doru mu emin ol
-		ghost = [0,0,0,0]
+		# ghost = [0,0,0,0]
+		closest_ghost_directions = map_manager.calc_distance_to_closest_ghosts(y,x)
 
 		state = [
 			# setting the walls.
@@ -85,10 +86,10 @@ class QLearner:
 			closest_directions.index(2),
 			closest_directions.index(3),
 
-			ghost[0],
-			ghost[1],
-			ghost[2],
-			ghost[3]
+			closest_ghost_directions[0],
+			closest_ghost_directions[1],
+			closest_ghost_directions[2],
+			closest_ghost_directions[3]
 		]
 		return np.asarray(state)
 
