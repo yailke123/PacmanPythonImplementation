@@ -20,7 +20,7 @@ class QLearner:
 		self.short_memory = np.array([])
 		self.agent_target = 1
 		self.agent_predict = 0
-		self.learning_rate = 0.0005
+		self.learning_rate = 0.0007
 
 		if os.path.isfile('weights.hdf5'):
 			self.model = self.create_network("weights.hdf5")
@@ -71,8 +71,8 @@ class QLearner:
 		# dot_distances = map_manager.get_closest_pellet_direction(x, y)
 		closest_directions = map_manager.calc_distance_to_closest_pellets(y, x)  # TODO x y doru mu emin ol
 		# ghost = [0,0,0,0]
-		closest_ghost_directions = map_manager.calc_distance_to_closest_ghosts(y,x)
-
+		ghost_distances = map_manager.calc_distance_to_closest_ghosts(y, x)
+		# print(ghost_distances)
 		state = [
 			# setting the walls.
 			walls[0],
@@ -86,10 +86,10 @@ class QLearner:
 			closest_directions.index(2),
 			closest_directions.index(3),
 
-			closest_ghost_directions[0],
-			closest_ghost_directions[1],
-			closest_ghost_directions[2],
-			closest_ghost_directions[3]
+			ghost_distances[0],
+			ghost_distances[1],
+			ghost_distances[2],
+			ghost_distances[3]
 		]
 		return np.asarray(state)
 
@@ -97,9 +97,8 @@ class QLearner:
 		self.reward = 0
 		time_penalty = int(frame_count * self.FRAME_PENALIZE_COEFFICIENT)
 		if player.is_dead:
-			self.reward = -10
-			# print('Reward', self.reward)
-
+			self.reward = -25
+			print('Reward', self.reward)
 			return self.reward
 		if player.did_eat:
 			self.reward = 10

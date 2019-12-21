@@ -13,6 +13,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
 
+
 def plot_seaborn(array_counter, array_score):
 	sns.set(color_codes=True)
 	ax = sns.regplot(np.array([array_counter])[0], np.array([array_score])[0], color="b", x_jitter=.1,
@@ -28,7 +29,7 @@ class PyManMain:
 
 	IS_AI = True
 	FPS = 240
-	NUMBER_OF_GAMES_TO_TRAIN = 10
+	NUMBER_OF_GAMES_TO_TRAIN = 100
 	GENERATION_TIMER = 15
 	INITIAL_EPSILON = 20
 	RAND_UPPER_BOUND = 80
@@ -54,7 +55,7 @@ class PyManMain:
 		self.screen = pygame.display.set_mode((self.width, self.height))
 		pygame.display.set_caption("AI playing PacMan in style!")
 
-		self.isGameOver = False
+		self.is_game_over = False
 		self.initial_layout = level001.level().getLayout()
 		self.learner = q_learner.QLearner()
 		self.map_manager = map_manager.MapManager(self.initial_layout)
@@ -97,7 +98,7 @@ class PyManMain:
 			textpos = text.get_rect(x=125)
 			self.screen.blit(text, textpos)
 
-			text = font.render("Random Prob: %s%%" % round((self.learner.epsilon / self.RAND_UPPER_BOUND)*100), 1, (66, 135, 245))
+			text = font.render("Random Prob: %s%%" % max(round((self.learner.epsilon / self.RAND_UPPER_BOUND)*100),0), 1, (66, 135, 245))
 			textpos = text.get_rect(x=290)
 			self.screen.blit(text, textpos)
 
@@ -121,9 +122,8 @@ class PyManMain:
 		self.draw_static_objects()
 		self.map_manager.reset_map(self.initial_layout)
 		self.learner.epsilon = self.INITIAL_EPSILON - self.game_counter
-		print('Game Count: ', self.game_counter)
 		self.pacman.did_change_tile = True
-		self.isGameOver = False
+		self.is_game_over = False
 		self.frame_count_since_last_decision = 0
 		self.is_initial_move = True
 		self.score = 0
@@ -186,13 +186,14 @@ class PyManMain:
 		counter_plot = []
 
 		# Infinitely many games generated.
-		while 1:
+		while self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN:
 			# Sets game to its initial state.
 			self.reset_game()
 			last_move = None
 			old_state = None
+
 			# Give infinite inputs for the game.
-			while 1:
+			while not self.is_game_over:
 				# Player is playing
 				if not self.IS_AI:
 					for event in pygame.event.get():
@@ -205,11 +206,11 @@ class PyManMain:
 
 					# Check if collided.
 					if self.hit_by_ghost():
-						break
+						self.is_game_over = True
 
 				# AI is playing.
 				else:
-					if self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN and not self.isGameOver:
+					if not self.is_game_over:
 						self.end = time.time()
 						self.elapsed_time = self.end - self.start
 						# Check if game timed-out or completed
@@ -217,9 +218,7 @@ class PyManMain:
 							self.start = time.time()
 							counter_plot.append(self.game_counter)
 							score_plot.append(self.score)
-							# self.game_counter += 1
-							self.isGameOver = True
-							break
+							self.is_game_over = True
 
 						self.frame_count_since_last_decision += 1
 
@@ -239,21 +238,20 @@ class PyManMain:
 
 								# train short memory base on the new action and state
 								self.learner.train_short_memory(old_state, last_move, reward, current_state,
-																self.isGameOver)
+								                                self.is_game_over)
 
 								# store the new data into a long term memory
-								self.learner.remember(old_state, last_move, reward, current_state, self.isGameOver)
+								self.learner.remember(old_state, last_move, reward, current_state, self.is_game_over)
 								self.record = self.get_record(self.score, self.record)
 
 							if randint(0, self.RAND_UPPER_BOUND) < self.learner.epsilon:
 								final_move = to_categorical(randint(0, 3), num_classes=4)
-								print('Random move: ', final_move)
+								# print('Random move: ', final_move)
 							else:
 								# predict action based on the old state
 								prediction = self.learner.model.predict(current_state.reshape((1, self.NN_INPUT_COUNT)))
 								final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
-								print('Neural move: ', final_move)
-
+								# print('Neural move: ', final_move)
 
 							# state_new = self.learner.get_state(self.map_manager, self.pacman)
 							old_state = current_state
@@ -269,9 +267,7 @@ class PyManMain:
 							self.start = time.time()
 							counter_plot.append(self.game_counter)
 							score_plot.append(self.score)
-							# self.game_counter += 1
-							self.isGameOver = True
-							break
+							self.is_game_over = True
 
 				self.pacman_sprites.update(self.block_sprites)
 				self.update_ghosts()
@@ -279,9 +275,9 @@ class PyManMain:
 				self.draw_objects()
 				pygame.event.pump()
 
-			if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN-1:
-				plot_seaborn(counter_plot, score_plot)
-				self.learner.save_weights_h5()
+		# When all games are over plot and save weights
+		plot_seaborn(counter_plot, score_plot)
+		self.learner.save_weights_h5()
 
 
 if __name__ == "__main__":
