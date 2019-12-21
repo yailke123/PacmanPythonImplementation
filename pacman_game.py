@@ -13,6 +13,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
 
+
 def plot_seaborn(array_counter, array_score):
 	sns.set(color_codes=True)
 	ax = sns.regplot(np.array([array_counter])[0], np.array([array_score])[0], color="b", x_jitter=.1,
@@ -35,7 +36,6 @@ class PyManMain:
 	PACMAN_SPEED = 3
 	DECISION_TIMEOUT_CONSTANT = 2
 
-
 	def __init__(self, width=640, height=480):
 		if os.path.isfile('weights.hdf5'):
 			#self.INITIAL_EPSILON = 0
@@ -54,12 +54,12 @@ class PyManMain:
 		self.screen = pygame.display.set_mode((self.width, self.height))
 		pygame.display.set_caption("AI playing PacMan in style!")
 
-		self.isGameOver = False
+		self.is_game_over = False
 		self.initial_layout = level001.level().getLayout()
 		self.learner = q_learner.QLearner()
 		self.map_manager = map_manager.MapManager(self.initial_layout)
 		self.pacman = None
-		self.game_counter = 1
+		self.game_counter = 0
 		self.score = 0
 		self.record = 0
 		self.frame_count_since_last_decision = 0
@@ -72,15 +72,11 @@ class PyManMain:
 			return record
 
 	def hit_by_ghost(self):
-		if pygame.sprite.collide_rect(self.ghost, self.pacman) or \
+		return pygame.sprite.collide_rect(self.ghost, self.pacman) or \
 				pygame.sprite.collide_rect(self.ghost2, self.pacman) or \
 				pygame.sprite.collide_rect(self.ghost3, self.pacman) or \
-				pygame.sprite.collide_rect(self.ghost4, self.pacman):
-			self.game_counter += 1
-			print("Game over: ", self.game_counter)
-			self.isGameOver = True
-			return True
-		return False
+				pygame.sprite.collide_rect(self.ghost4, self.pacman)
+
 
 	def update_score(self):
 		collide_list = pygame.sprite.spritecollide(self.pacman, self.pellet_sprites, True)
@@ -124,11 +120,11 @@ class PyManMain:
 		self.draw_static_objects()
 		self.map_manager.reset_map(self.initial_layout)
 		self.learner.epsilon = self.INITIAL_EPSILON - self.game_counter
-		print('Game Count: ', self.game_counter)
 		self.pacman.did_change_tile = True
-		self.isGameOver = False
+		self.pacman.is_dead = False
+		self.is_game_over = False
 		self.frame_count_since_last_decision = 0
-		# self.learner.print_weight()
+		self.start = time.time()
 
 	def draw_static_objects(self):
 		"""Create the background"""
@@ -186,11 +182,16 @@ class PyManMain:
 		counter_plot = []
 
 		# Infinitely many games generated.
-		while 1:
+
+		while self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN:
+			self.game_counter += 1
 			# Sets game to its initial state.
 			self.reset_game()
+			# if self.game_counter > self.NUMBER_OF_GAMES_TO_TRAIN:
+			# 	plot_seaborn(counter_plot, score_plot)
+			# 	self.learner.save_weights_h5()
 			# Give infinite inputs for the game.
-			while 1:
+			while not self.is_game_over:
 				# Player is playing
 				if not self.IS_AI:
 					for event in pygame.event.get():
@@ -200,89 +201,74 @@ class PyManMain:
 							if ((event.key == K_RIGHT) or (event.key == K_LEFT) or (event.key == K_UP)
 									or (event.key == K_DOWN)):
 								self.pacman.move_key_down(event.key)
-					#self.pacman_sprites.update(self.block_sprites) # TODO bu ne ise yarıyor acaba :)
-
-					# not Not rendering ghost for now.
-					#self.update_ghosts()
 
 					# Check if collided.
 					if self.hit_by_ghost():
-						break
-
-					#self.update_score()
-
-					# Draws objects on screen.
-					#self.draw_objects()
+						self.is_game_over = True
 
 				# AI is playing.
 				else:
-					if self.game_counter < self.NUMBER_OF_GAMES_TO_TRAIN and not self.isGameOver:
+					# Game is still on
+					if self.game_counter <= self.NUMBER_OF_GAMES_TO_TRAIN and not self.is_game_over:
 						self.end = time.time()
 						self.elapsed_time = self.end - self.start
-						# Check if game timed-out.
+						self.frame_count_since_last_decision += 1
+
+						# Game is timed-out.
 						if self.elapsed_time > self.GENERATION_TIMER:
-							self.start = time.time()
 							counter_plot.append(self.game_counter)
 							score_plot.append(self.score)
-							self.game_counter += 1
-							self.isGameOver = True
-							break
+							self.is_game_over = True
 
-						self.frame_count_since_last_decision += 1
-						if self.pacman.did_change_tile or self.frame_count_since_last_decision > self.frame_count_threshold:
+						elif self.pacman.did_change_tile or self.frame_count_since_last_decision > self.frame_count_threshold:
 							if self.frame_count_since_last_decision > self.frame_count_threshold:
 								self.pacman.did_eat = False
 							old_state = self.learner.get_state(self.map_manager, self.pacman)
 							if randint(0, self.RAND_UPPER_BOUND) < self.learner.epsilon:
 								final_move = to_categorical(randint(0, 3), num_classes=4)
-								print('Random move: ', final_move)
+								# print('Random move: ', final_move)
 							else:
 								# predict action based on the old state
-								prediction = self.learner.model.predict(old_state.reshape((1, 8)))
+								prediction = self.learner.model.predict(old_state.reshape((1, 12)))
 								final_move = to_categorical(np.argmax(prediction[0]), num_classes=4)
-								print('Neural move: ', final_move)
+								# print('Neural move: ', final_move)
 
 							# perform new move and get new state
 							self.pacman.do_move(final_move)
+
+							if self.hit_by_ghost():
+								self.is_game_over = True
+								self.pacman.is_dead = True
+
 							state_new = self.learner.get_state(self.map_manager, self.pacman)
 
 							# set reward for the new state
 							reward = self.learner.set_reward(self.pacman, self.frame_count_since_last_decision)
 
 							# train short memory base on the new action and state
-							self.learner.train_short_memory(old_state, final_move, reward, state_new, self.isGameOver)
+							self.learner.train_short_memory(old_state, final_move, reward, state_new, self.is_game_over)
 
 							# store the new data into a long term memory
-							self.learner.remember(old_state, final_move, reward, state_new, self.isGameOver)
+							self.learner.remember(old_state, final_move, reward, state_new, self.is_game_over)
 							self.record = self.get_record(self.score, self.record)
 
 							self.frame_count_since_last_decision = 0
 
-						if self.hit_by_ghost():
+						if self.is_game_over:
 							self.learner.replay_new(self.learner.memory)
-							break
 
-						"""Check for a pacman collision/pellet collision"""
-						#self.update_score()
-
-						"""Do the Drawing"""
-						#self.draw_objects()
-
+				# Both AI and Player
+				# Draw after input
 				self.pacman_sprites.update(self.block_sprites)
-				self.update_ghosts()
+				# self.update_ghosts()
 				self.update_score()
 				self.draw_objects()
 
-			if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
-				plot_seaborn(counter_plot, score_plot)
-				self.learner.save_weights_h5()
-				"""Update the sprites"""
-			self.pacman_sprites.update(self.block_sprites)
-			self.ghost_sprites.update(self.block_sprites)
-			self.ghost2_sprites.update(self.block_sprites)
-			self.ghost3_sprites.update(self.block_sprites)
-			self.ghost4_sprites.update(self.block_sprites)
 
+		# At the end of each game.
+		# if self.game_counter >= self.NUMBER_OF_GAMES_TO_TRAIN:
+		plot_seaborn(counter_plot, score_plot)
+		self.learner.save_weights_h5()
 
 if __name__ == "__main__":
 	clock = pygame.time.Clock()

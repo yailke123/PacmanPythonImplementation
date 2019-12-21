@@ -32,16 +32,19 @@ class MapManager:
 	# pacman_col is the column in the layout.
 	def calc_distance_to_closest_pellets(self, row, col):
 		non_binary_inputs = False
-		left_layout = deepcopy(self.layout)
-		right_layout = deepcopy(self.layout)
-		up_layout = deepcopy(self.layout)
-		down_layout = deepcopy(self.layout)
+		# left_layout = deepcopy(self.layout)
+		# right_layout = deepcopy(self.layout)
+		# up_layout = deepcopy(self.layout)
+		# down_layout = deepcopy(self.layout)
+		#
+		# # Set pacman starting position as visited
+		# left_layout[row][col] = -1
+		# right_layout[row][col] = -1
+		# up_layout[row][col] = -1
+		# down_layout[row][col] = -1
 
-		# Set pacman starting position as visited
-		left_layout[row][col] = -1
-		right_layout[row][col] = -1
-		up_layout[row][col] = -1
-		down_layout[row][col] = -1
+		left_layout, right_layout, up_layout, down_layout = self.my_deep_copy(row, col)
+
 		# Calculate distances
 		left_distance = self.check_pellet_on_side(row, col-1, left_layout)
 		right_distance = self.check_pellet_on_side(row, col+1, right_layout)
@@ -82,11 +85,12 @@ class MapManager:
 			row = my_tuple[0][0]
 			col = my_tuple[0][1]
 			current_distance = my_tuple[1]
+			value = layout[row][col]
 
 			#TODO yolda canavar varsa napıcagımızı netlestır
 			if layout[row][col] == 0:  # If pellet in coordinate, return distance
 				return current_distance
-			elif layout[row][col] != -1 and layout[row][col] != 1:  # If not visited(-1) and not wall(1) in coordinate, append neighbours to the queue
+			elif value != -1 and value != 1:  # If not visited(-1) and not wall(1) in coordinate, append neighbours to the queue
 				# Set visited
 				layout[row][col] = -1
 
@@ -129,3 +133,74 @@ class MapManager:
 			pellets[3] = 1
 
 		return pellets
+
+	def calc_distance_to_closest_ghosts(self, row, col):
+		left_layout, right_layout, up_layout, down_layout = self.my_deep_copy(row, col)
+
+		# Calculate distances
+		left_distance = self.check_ghost_on_side(row, col-1, left_layout)
+		right_distance = self.check_ghost_on_side(row, col+1, right_layout)
+		up_distance = self.check_ghost_on_side(row-1, col, up_layout)
+		down_distance = self.check_ghost_on_side(row+1, col, down_layout)
+
+		# #gecici bir cozum
+		# egenin_listesi = [left_distance,right_distance,up_distance,down_distance]
+		# for i in range(len(egenin_listesi)):
+		# 	if egenin_listesi[i] > 5:
+		# 		egenin_listesi[i] = 0
+		# 	else:
+		# 		egenin_listesi[i] = 1
+		#
+		# return egenin_listesi
+
+		return [left_distance, right_distance, up_distance, down_distance]
+
+
+		# used for sorting which direcition is closest to ghost
+		# distances = [(left_distance, 0), (right_distance, 1), (up_distance, 2), (down_distance, 3)]
+		# distances.sort(key=lambda tup: tup[0], reverse=True)  # Sort in descending order
+		# return [i[1] for i in distances]
+
+
+	@staticmethod
+	def check_ghost_on_side(row, col, layout):
+		q = []
+		q.append(((row, col), 1))  # Add starting point to the queue
+
+		while len(q) != 0: # While queue not empty
+			my_tuple = q.pop(0)
+			row = my_tuple[0][0]
+			col = my_tuple[0][1]
+			current_distance = my_tuple[1]
+
+			value = layout[row][col]
+			if value == 4 or value == 5 or value == 6 or value == 7:  # If ghost in coordinate, return distance
+				return 1/current_distance
+			elif layout[row][col] != -1 and layout[row][col] != 1:  # If not visited(-1) and not wall(1) in coordinate, append neighbours to the queue
+				# Set visited
+				layout[row][col] = -1
+
+				#  Add neighbors to the queue
+				q.append(((row, col-1), current_distance+1))  # left
+				q.append(((row, col+1), current_distance+1))  # right
+				q.append(((row-1, col), current_distance+1))  # up
+				q.append(((row+1, col), current_distance+1))  # down
+
+		# If couldn't find pellet, there is no path
+		return 0
+
+	def my_deep_copy(self, row, col):
+		left_layout = deepcopy(self.layout)
+		right_layout = deepcopy(self.layout)
+		up_layout = deepcopy(self.layout)
+		down_layout = deepcopy(self.layout)
+
+		# Set pacman starting position as visited
+		left_layout[row][col] = -1
+		right_layout[row][col] = -1
+		up_layout[row][col] = -1
+		down_layout[row][col] = -1
+
+		return left_layout, right_layout, up_layout, down_layout
+
+

@@ -40,15 +40,16 @@ class QLearner:
 		# 5:  can_move_right
 		# 6:  can_move_up
 		# 7:  can_move_down
-		# 8:  is_closest_to_dot_left
-		# 9:  is_closest_to_dot_right
-		# 10: is_closest_to_dot_up
-		# 11: is_closest_to_dot_down
+		# 8:
+		# 9:
+		# 10:
+		# 11:
 
 		walls = map_manager.check_walls(pacman.currentX, pacman.currentY)
-		dot_distances = map_manager.get_closest_pellet_direction(pacman.currentX, pacman.currentY)
+		# dot_distances = map_manager.get_closest_pellet_direction(pacman.currentX, pacman.currentY)
 		closest_directions = map_manager.calc_distance_to_closest_pellets(pacman.currentY, pacman.currentX) # TODO x y doru mu emin ol
-
+		# ghost_directions = map_manager.calc_distance_to_closest_ghosts(pacman.currentY, pacman.currentX)
+		ghost_directions = [0, 0, 0, 0]
 		state = [
 			# setting the walls.
 			walls[0],
@@ -60,7 +61,13 @@ class QLearner:
 			closest_directions.index(0),
 			closest_directions.index(1),
 			closest_directions.index(2),
-			closest_directions.index(3)
+			closest_directions.index(3),
+
+			#ghosts
+			ghost_directions[0],  # 1/left_distance
+			ghost_directions[1],  # 1/right_distance
+			ghost_directions[2],
+			ghost_directions[3]
 		]
 
 		return np.asarray(state)
@@ -69,18 +76,16 @@ class QLearner:
 		self.reward = 0
 		time_penalty = int(frame_count * self.FRAME_PENALIZE_COEFFICIENT)
 		if player.is_dead:
-			self.reward = -10
+			self.reward = -71
 			return self.reward
 		if player.did_eat:
 			self.reward = 10
 		self.reward -= time_penalty
-		# print('Reward', self.reward)
 		return self.reward
-
 
 	def create_network(self, weights=None):
 		model = Sequential()
-		model.add(Dense(activation="relu", input_dim=8, units=120))
+		model.add(Dense(activation="relu", input_dim=12, units=120))
 		model.add(Dropout(0.15))
 		model.add(Dense(activation="relu", units=120))
 		model.add(Dropout(0.15))
@@ -116,10 +121,10 @@ class QLearner:
 	def train_short_memory(self, state, action, reward, next_state, is_dead):
 		target = reward
 		if not is_dead:
-			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, 8)))[0])
-		target_f = self.model.predict(state.reshape((1, 8)))
+			target = reward + self.alpha * np.amax(self.model.predict(next_state.reshape((1, 12)))[0])
+		target_f = self.model.predict(state.reshape((1, 12)))
 		target_f[0][np.argmax(action)] = target
-		self.model.fit(state.reshape((1, 8)), target_f, epochs=1, verbose=0)
+		self.model.fit(state.reshape((1, 12)), target_f, epochs=1, verbose=0)
 
 	def save_weights_h5(self):
 		self.model.save("weights.hdf5")
