@@ -1,6 +1,9 @@
 from random import shuffle
 from copy import deepcopy
 
+import numpy as np
+
+
 class MapManager:
 	START_X = 9
 	START_Y = 15
@@ -11,6 +14,17 @@ class MapManager:
 
 		# replaces initial pacman with blank value.
 		self.layout[self.START_Y][self.START_X] = 9
+
+		#  keeps track of ghosts in the map
+		self.ghost1_pos = None#(np.where(np.array(self.layout) == 4))  # ghost value = 4
+		self.ghost2_pos = None#(np.where(np.array(self.layout) == 5))  # ghost value = 5
+		self.ghost3_pos = None#(np.where(np.array(self.layout) == 6))  # ghost value = 6
+		self.ghost4_pos = None#(np.where(np.array(self.layout) == 7))  # ghost value = 7
+		# ghostlar
+		self.ghost_positions =[self.ghost1_pos, self.ghost2_pos, self.ghost3_pos, self.ghost4_pos]
+
+
+		# print(self.ghost1_pos[0],self.ghost1_pos[1])
 
 	def reset_map(self, level_layout):
 		# Removes blank edges from the initial layout.
@@ -26,7 +40,10 @@ class MapManager:
 		else:
 			pacman.did_eat = False
 
-		# print(self.layout[new_y])
+	def move_ghost(self, ghost_x_tile, ghost_y_tile, ghost_id):
+		self.ghost_positions[ghost_id] = (ghost_y_tile, ghost_x_tile)
+
+
 
 	# pacman_row is the row in the layout.
 	# pacman_col is the column in the layout.
@@ -55,7 +72,7 @@ class MapManager:
 		# Compare distances
 		distances = [(left_distance, 0), (right_distance, 1), (up_distance, 2), (down_distance, 3)]
 		distances.sort(key=lambda tup: tup[0], reverse=False)  # Sort in ascending order
-		return [i[1] for i in distances]
+		return [i[1] for i in distances], [i[0] for i in distances]
 
 		# Shuffle directions with same distance values to prevent bias
 		# start = 0
@@ -72,8 +89,8 @@ class MapManager:
 		#
 		# return [i[1] for i in distances]
 
-	@staticmethod
-	def check_pellet_on_side(row, col, layout):
+	# @staticmethod
+	def check_pellet_on_side(self, row, col, layout):
 		q = []
 		q.append(((row, col), 1))  # Add starting point to the queue
 
@@ -82,6 +99,10 @@ class MapManager:
 			row = my_tuple[0][0]
 			col = my_tuple[0][1]
 			current_distance = my_tuple[1]
+
+			pacman_index_tuple = (col, row)
+			if pacman_index_tuple in self.ghost_positions:
+				return 1000
 
 			#TODO yolda canavar varsa napıcagımızı netlestır
 			if layout[row][col] == 0:  # If pellet in coordinate, return distance
@@ -118,7 +139,6 @@ class MapManager:
 		pac_right_index = pacman_x + 1
 		pac_up_index = pacman_y - 1
 		pac_down_index = pacman_y + 1
-		# print('indecies: ', pac_left_index, pac_right_index, pac_up_index, pac_down_index, pacman_x, pacman_y)
 
 		if pac_left_index >= 0 and self.layout[pacman_y][pac_left_index] == 0:
 			pellets[0] = 1
@@ -131,22 +151,70 @@ class MapManager:
 
 		return pellets
 
+
+	def check_ghost(self, row, col):
+		positions = [(row, col - 1),  # left 1
+		             (row, col - 2),  # left 2
+		             (row, col + 1),  # right 1
+		             (row, col + 2),  # right 2
+		             (row - 1, col),  # up 1
+		             (row - 2, col),  # up 2
+		             (row + 1, col),  # down 1
+		             (row + 2, col),  # down 2
+		             (row - 1, col + 1),  # right up
+		             (row - 1, col - 1),  # left up
+		             (row + 1, col + 1),  # right down
+		             (row + 1, col - 1),  # left down
+		             ]
+
+		result = []
+		for position in positions:
+			if position in self.ghost_positions:
+				result.append(1)
+			else:
+				result.append(0)
+
+		return result
+
+
+
+
 	def calc_distance_to_closest_ghosts(self, row, col):
 		left_layout, right_layout, up_layout, down_layout = self.my_deep_copy(row, col)
+		left_up_layout, right_up_layout, right_down_layout, left_down_layout = self.my_deep_copy(row, col)
 
 		# Calculate distances
 		left_distance = self.check_ghost_on_side(row, col-1, left_layout)
+		left_up_distance = self.check_ghost_on_side(row-1, col-1, left_up_layout)
+		left_down_distance = self.check_ghost_on_side(row+1, col-1, left_down_layout)
+
 		right_distance = self.check_ghost_on_side(row, col+1, right_layout)
+		right_up_distance = self.check_ghost_on_side(row-1, col+1, right_up_layout)
+		right_down_distance = self.check_ghost_on_side(row+1, col+1, right_down_layout)
+
 		up_distance = self.check_ghost_on_side(row-1, col, up_layout)
 		down_distance = self.check_ghost_on_side(row+1, col, down_layout)
 
-		return [left_distance, right_distance, up_distance, down_distance]
+		distances = [left_distance, right_distance, up_distance, down_distance, left_up_distance, left_down_distance, right_up_distance, right_down_distance]
+
+		for index, dist in enumerate(distances):
+			if dist > 1:
+				distances[index] = 0
+
+		return distances
+
+
+		# distances = [(left_distance, 0), (right_distance, 1), (up_distance, 2), (down_distance, 3)]
+		# distances.sort(key=lambda tup: tup[0], reverse=True)  # Sort in descending order
+		# return [i[1] for i in distances]
+
+		# return [left_distance, right_distance, up_distance, down_distance]
 
 
 
 
-	@staticmethod
-	def check_ghost_on_side(row, col, layout):
+	# @staticmethod
+	def check_ghost_on_side(self, row, col, layout):
 		q = []
 		q.append(((row, col), 1))  # Add starting point to the queue
 
@@ -156,9 +224,11 @@ class MapManager:
 			col = my_tuple[0][1]
 			current_distance = my_tuple[1]
 
-			value = layout[row][col]
-			if value == 4 or value == 5 or value == 6 or value == 7:  # If ghost in coordinate, return distance
-				return 1/current_distance
+			pacman_index_tuple = (col, row) # todo bu dogru duzlem mı sımdı hangı duzlem
+
+
+			if pacman_index_tuple in self.ghost_positions:  # If ghost in coordinate, return distance
+				return current_distance
 			elif layout[row][col] != -1 and layout[row][col] != 1:  # If not visited(-1) and not wall(1) in coordinate, append neighbours to the queue
 				# Set visited
 				layout[row][col] = -1

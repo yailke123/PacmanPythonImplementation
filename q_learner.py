@@ -11,7 +11,7 @@ import h5py
 class QLearner:
 	ITEMS_TO_REPLAY = 1000
 	FRAME_PENALIZE_COEFFICIENT = 0.3
-	NN_INPUT_SIZE = 12
+	NN_INPUT_SIZE = 21
 
 	def __init__(self):
 		self.reward = 0
@@ -69,10 +69,18 @@ class QLearner:
 
 		walls = map_manager.check_walls(x, y)
 		# dot_distances = map_manager.get_closest_pellet_direction(x, y)
-		closest_directions = map_manager.calc_distance_to_closest_pellets(y, x)  # TODO x y doru mu emin ol
+		closest_directions, pellet_distance_values = map_manager.calc_distance_to_closest_pellets(y, x)  # TODO x y doru mu emin ol
 		# ghost = [0,0,0,0]
-		ghost_distances = map_manager.calc_distance_to_closest_ghosts(y, x)
+		ghost_distances = map_manager.check_ghost(y, x)
+
+		can_focus_on_eating = 0
+		if 1 not in ghost_distances:
+			for value in pellet_distance_values:
+				if value < 3:
+					can_focus_on_eating = 1
 		# print(ghost_distances)
+
+		dead = pacman.is_dead
 		state = [
 			# setting the walls.
 			walls[0],
@@ -89,7 +97,24 @@ class QLearner:
 			ghost_distances[0],
 			ghost_distances[1],
 			ghost_distances[2],
-			ghost_distances[3]
+			ghost_distances[3],
+			ghost_distances[4],
+			ghost_distances[5],
+			ghost_distances[6],
+			ghost_distances[7],
+			ghost_distances[8],
+			ghost_distances[9],
+			ghost_distances[10],
+			ghost_distances[11],
+			# can_focus_on_eating
+
+			dead
+
+			# ghost_distances.index(0),
+			# ghost_distances.index(1),
+			# ghost_distances.index(2),
+			# ghost_distances.index(3)
+
 		]
 		return np.asarray(state)
 
@@ -97,13 +122,13 @@ class QLearner:
 		self.reward = 0
 		time_penalty = int(frame_count * self.FRAME_PENALIZE_COEFFICIENT)
 		if player.is_dead:
-			self.reward = -25
+			self.reward = -250
 			print('Reward', self.reward)
 			return self.reward
 		if player.did_eat:
 			self.reward = 10
 		self.reward -= time_penalty
-		# print('Reward', self.reward)
+		print('Reward', self.reward)
 		return self.reward
 
 

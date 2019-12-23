@@ -29,13 +29,13 @@ class PyManMain:
 
 	IS_AI = True
 	FPS = 240
-	NUMBER_OF_GAMES_TO_TRAIN = 100
-	GENERATION_TIMER = 15
-	INITIAL_EPSILON = 20
-	RAND_UPPER_BOUND = 80
+	NUMBER_OF_GAMES_TO_TRAIN = 500
+	GENERATION_TIMER = 17
+	INITIAL_EPSILON = 450
+	RAND_UPPER_BOUND = 500
 	PACMAN_SPEED = 3
 	DECISION_TIMEOUT_CONSTANT = 5
-	NN_INPUT_COUNT = 12
+	NN_INPUT_COUNT = 21
 
 	def __init__(self, width=640, height=480):
 		if os.path.isfile('weights.hdf5'):
@@ -74,11 +74,13 @@ class PyManMain:
 			return record
 
 	def hit_by_ghost(self):
-		return pygame.sprite.collide_rect(self.ghost, self.pacman) or \
+		if pygame.sprite.collide_rect(self.ghost, self.pacman) or \
 				pygame.sprite.collide_rect(self.ghost2, self.pacman) or \
 				pygame.sprite.collide_rect(self.ghost3, self.pacman) or \
-				pygame.sprite.collide_rect(self.ghost4, self.pacman)
-
+				pygame.sprite.collide_rect(self.ghost4, self.pacman):
+			self.pacman.is_dead = True
+			return True
+		return False
 
 	def update_score(self):
 		collide_list = pygame.sprite.spritecollide(self.pacman, self.pellet_sprites, True)
@@ -123,6 +125,7 @@ class PyManMain:
 		self.map_manager.reset_map(self.initial_layout)
 		self.learner.epsilon = self.INITIAL_EPSILON - self.game_counter
 		self.pacman.did_change_tile = True
+		self.pacman.is_dead = False
 		self.is_game_over = False
 		self.frame_count_since_last_decision = 0
 		self.is_initial_move = True
@@ -167,13 +170,13 @@ class PyManMain:
 				elif self.initial_layout[y][x] == level1.PELLET:
 					self.pellet_sprites.add(basic_sprite.Sprite(centerPoint, img_list[level1.PELLET]))
 				elif self.initial_layout[y][x] == level1.GHOST:
-					self.ghost = Ghost(centerPoint, img_list[level1.GHOST])
+					self.ghost = Ghost(centerPoint, img_list[level1.GHOST], self.map_manager)
 				elif self.initial_layout[y][x] == level1.GHOST2:
-					self.ghost2 = Ghost(centerPoint, img_list[level1.GHOST2])
+					self.ghost2 = Ghost(centerPoint, img_list[level1.GHOST2], self.map_manager)
 				elif self.initial_layout[y][x] == level1.GHOST3:
-					self.ghost3 = Ghost(centerPoint, img_list[level1.GHOST3])
+					self.ghost3 = Ghost(centerPoint, img_list[level1.GHOST3], self.map_manager)
 				elif self.initial_layout[y][x] == level1.GHOST4:
-					self.ghost4 = Ghost(centerPoint, img_list[level1.GHOST4])
+					self.ghost4 = Ghost(centerPoint, img_list[level1.GHOST4], self.map_manager)
 
 		self.pacman_sprites = pygame.sprite.RenderPlain(self.pacman)
 		self.ghost_sprites = pygame.sprite.RenderPlain(self.ghost)
@@ -214,22 +217,22 @@ class PyManMain:
 						self.end = time.time()
 						self.elapsed_time = self.end - self.start
 						# Check if game timed-out or completed
-						if self.elapsed_time > self.GENERATION_TIMER or self.score == 1820:
+						if self.elapsed_time > self.GENERATION_TIMER or self.score == 1820 or self.hit_by_ghost():
 							self.start = time.time()
 							counter_plot.append(self.game_counter)
 							score_plot.append(self.score)
+							self.learner.replay_new(self.learner.memory)
 							self.is_game_over = True
 
 						self.frame_count_since_last_decision += 1
 
 						# i'm at critical point.
-						if self.pacman.did_change_tile or self.frame_count_since_last_decision > self.frame_count_threshold:
+						if self.pacman.did_change_tile or self.frame_count_since_last_decision > self.frame_count_threshold or self.hit_by_ghost():
 
 							if self.frame_count_since_last_decision > self.frame_count_threshold:
 								self.pacman.did_eat = False
 
 							current_state = self.learner.get_state(self.map_manager, self.pacman)
-
 							if self.is_initial_move:
 								self.is_initial_move = False
 							else:
@@ -239,7 +242,9 @@ class PyManMain:
 								# train short memory base on the new action and state
 								self.learner.train_short_memory(old_state, last_move, reward, current_state,
 								                                self.is_game_over)
-
+								if self.hit_by_ghost():
+									print(current_state)
+									print(old_state)
 								# store the new data into a long term memory
 								self.learner.remember(old_state, last_move, reward, current_state, self.is_game_over)
 								self.record = self.get_record(self.score, self.record)
@@ -261,13 +266,6 @@ class PyManMain:
 							self.pacman.queue_move(final_move)
 
 							self.frame_count_since_last_decision = 0
-
-						if self.hit_by_ghost():
-							self.learner.replay_new(self.learner.memory)
-							self.start = time.time()
-							counter_plot.append(self.game_counter)
-							score_plot.append(self.score)
-							self.is_game_over = True
 
 				self.pacman_sprites.update(self.block_sprites)
 				self.update_ghosts()

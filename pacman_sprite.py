@@ -6,6 +6,7 @@ import level001
 import map_manager
 import numpy as np
 
+GHOST_COUNT = 0
 BLOCK_SIZE = 24
 x_offset = (BLOCK_SIZE / 2)
 y_offset = (BLOCK_SIZE / 2)
@@ -95,7 +96,7 @@ class Pacman(basic_sprite.Sprite):
 		if self.tile_x != self.currentX or self.tile_y != self.currentY:
 
 			#print("new Tile")
-			self.map_manager.move_pacman(self.tile_x, self.tile_y,self)
+			self.map_manager.move_pacman(self.tile_x, self.tile_y, self)
 			self.currentX = self.tile_x
 			self.currentY = self.tile_y
 			self.did_change_tile = True
@@ -157,9 +158,12 @@ class Pacman(basic_sprite.Sprite):
 class Ghost(basic_sprite.Sprite):
 	"""This is our ghost that will move around the screen"""
 
-	def __init__(self, centerPoint, image):
-
+	def __init__(self, centerPoint, image, map_manager: map_manager):
+		image = pygame.transform.scale(image, (22, 22))
 		basic_sprite.Sprite.__init__(self, centerPoint, image)
+		global GHOST_COUNT
+		self.ghost_id = GHOST_COUNT%4
+		GHOST_COUNT = GHOST_COUNT + 1
 		"""Initialize the number of pellets eaten"""
 		self.pellets = 0
 		"""Set the number of Pixels to move each time"""
@@ -174,13 +178,22 @@ class Ghost(basic_sprite.Sprite):
 		self.xdir = [0, -self.dist, self.dist, 0, 0]
 		self.ydir = [0, 0, 0, -self.dist, self.dist]
 
+		self.x_tile = round((self.rect.centerx - 36)/BLOCK_SIZE) #int((self.rect.left - x_offset)/BLOCK_SIZE)
+		self.y_tile = round((self.rect.centery - 60) / BLOCK_SIZE ) #int((self.rect.top - y_offset)/BLOCK_SIZE - 1)
+
+		self.map_manager = map_manager
+
 	def update(self, block_group):
-		"""Called when the Ghost sprit should update itself"""
+		"""Called when the Ghost sprite should update itself"""
 
 		self.xMove = self.xdir[self.nextdir]
 		self.yMove = self.ydir[self.nextdir]
-
 		self.rect.move_ip(self.xMove, self.yMove)
+		# calculate index of ghosts
+		self.x_tile = round((self.rect.centerx - 36)/BLOCK_SIZE)#int((self.rect.left - x_offset)/BLOCK_SIZE)
+		self.y_tile = round((self.rect.centery - 60) / BLOCK_SIZE ) #int((self.rect.top - y_offset)/BLOCK_SIZE - 1)
+
+		self.map_manager.move_ghost(self.x_tile, self.y_tile, self.ghost_id)
 
 		if pygame.sprite.spritecollide(self, block_group, False):
 			self.rect.move_ip(-self.xMove, -self.yMove)
@@ -188,6 +201,9 @@ class Ghost(basic_sprite.Sprite):
 			self.xMove = self.xdir[self.direction]
 			self.yMove = self.ydir[self.direction]
 			self.rect.move_ip(self.xMove, self.yMove)
+
+			self.x_tile = int((self.rect.left - x_offset) / BLOCK_SIZE)
+			self.y_tile = int((self.rect.top - y_offset) / BLOCK_SIZE - 1)
 
 			if pygame.sprite.spritecollide(self, block_group, False):
 				self.rect.move_ip(-self.xMove, -self.yMove)

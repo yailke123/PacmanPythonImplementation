@@ -14,6 +14,7 @@ class Sprite(pygame.sprite.Sprite):
         """Move the rect into the correct position"""
         self.rect.center = centerPoint
 
+
         
 class Pellet(pygame.sprite.Sprite):
         
@@ -22,6 +23,7 @@ class Pellet(pygame.sprite.Sprite):
         
         if image == None:
             self.image, self.rect = load_image('pellet.png', -1)
+
         else:
             self.image = image
             self.rect = image.get_rect()
